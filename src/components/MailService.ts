@@ -1,8 +1,8 @@
 import emailjs from '@emailjs/browser';
 
-const SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID || 'service_mlrua6s';
-const TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID || 'template_wcveen7';
-const USER_ID = import.meta.env.VITE_EMAILJS_USER_ID || 'qU2NlZClNfJyjoXMz'; // EmailJS public key
+const SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID || 'service_jb7xhwc';
+const TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID || 'template_m8lqsn7';
+const USER_ID = import.meta.env.VITE_EMAILJS_USER_ID || 'dMklxQ2oAXkG4fuoL'; // EmailJS public key
 
 export const sendEmail = async (formData: { name: string; email: string; subject: string; message: string }) => {
   const templateParams = {
