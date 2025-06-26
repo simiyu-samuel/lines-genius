@@ -18,7 +18,7 @@ export const Footer: React.FC = () => {
   const currentYear = new Date().getFullYear();
 
   const socialLinks = [
-    { icon: Github, href: 'https://github.com/linesgenius', label: 'GitHub' },
+    { icon: Github, href: 'https://github.com/Lines-Genius/.githbub', label: 'GitHub' },
     { icon: Youtube, href: 'https://www.youtube.com/@LinesGenius', label: 'YouTube' },
     { icon: Twitter, href: '#', label: 'Twitter' },
     { icon: Mail, href: '#', label: 'Email' },
