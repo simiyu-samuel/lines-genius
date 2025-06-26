@@ -1,5 +1,6 @@
-// import React from 'react';
+import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import emailjs from '@emailjs/browser';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
 import { SavedLinesProvider } from './context/SavedLinesContext';
@@ -13,6 +14,11 @@ import { Contact } from './pages/Contact';
 import { Auth } from './pages/Auth';
 
 function App() {
+  useEffect(() => {
+    // Initialize EmailJS with the USER_ID from environment variables
+    emailjs.init(import.meta.env.VITE_EMAILJS_USER_ID || 'qU2NlZClNfJyjoXMz');
+  }, []); // Empty dependency array ensures it runs once on mount
+
   return (
     <ThemeProvider>
       <AuthProvider>
