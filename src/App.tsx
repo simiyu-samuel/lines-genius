@@ -1,0 +1,42 @@
+// import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { ThemeProvider } from './context/ThemeContext';
+import { AuthProvider } from './context/AuthContext';
+import { SavedLinesProvider } from './context/SavedLinesContext';
+import { Header } from './components/Header';
+import { Footer } from './components/Footer';
+import { Landing } from './pages/Landing';
+import { Generator } from './pages/Generator';
+import { SavedLines } from './pages/SavedLines';
+import { About } from './pages/About';
+import { Contact } from './pages/Contact';
+import { Auth } from './pages/Auth';
+
+function App() {
+  return (
+    <ThemeProvider>
+      <AuthProvider>
+        <SavedLinesProvider>
+          <Router>
+            <div className="min-h-screen bg-gradient-to-br from-white via-gray-50 to-white dark:from-dark-900 dark:via-dark-800 dark:to-dark-900 transition-colors duration-300">
+              <Header />
+              <main>
+                <Routes>
+                  <Route path="/" element={<Landing />} />
+                  <Route path="/generate" element={<Generator />} />
+                  <Route path="/saved" element={<SavedLines />} />
+                  <Route path="/about" element={<About />} />
+                  <Route path="/contact" element={<Contact />} />
+                  <Route path="/auth" element={<Auth />} />
+                </Routes>
+              </main>
+              <Footer />
+            </div>
+          </Router>
+        </SavedLinesProvider>
+      </AuthProvider>
+    </ThemeProvider>
+  );
+}
+
+export default App;
