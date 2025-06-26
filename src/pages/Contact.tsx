@@ -11,6 +11,7 @@ import {
   Youtube,
   CheckCircle
 } from 'lucide-react';
+import { sendEmail } from '../components/MailService';
 
 export const Contact: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -21,6 +22,7 @@ export const Contact: React.FC = () => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData(prev => ({
@@ -32,18 +34,23 @@ export const Contact: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
-    // Simulate form submission
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    setIsSubmitted(true);
-    setIsSubmitting(false);
-    
-    // Reset form after 3 seconds
-    setTimeout(() => {
-      setIsSubmitted(false);
+    setErrorMessage(null); // Reset error message on new submission
+
+    const result = await sendEmail(formData);
+
+    if (result.success) {
+      setIsSubmitted(true);
       setFormData({ name: '', email: '', subject: '', message: '' });
-    }, 3000);
+      setTimeout(() => {
+        setIsSubmitted(false);
+      }, 3000);
+    } else {
+      const errorMsg = result.error?.message || 'An unknown error occurred. Check console for details.';
+      setErrorMessage(errorMsg);
+      console.error('Email sending failed:', result.error);
+    }
+
+    setIsSubmitting(false);
   };
 
   const contactInfo = [
@@ -229,6 +236,10 @@ export const Contact: React.FC = () => {
                       </>
                     )}
                   </motion.button>
+
+                  {errorMessage && (
+                    <div className="text-red-500 text-sm mt-2">{errorMessage}</div>
+                  )}
                 </form>
               )}
             </div>
