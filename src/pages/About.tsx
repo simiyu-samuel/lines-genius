@@ -1,5 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import nasri from '../assets/images/nasri.jpg';
+import wambia from '../assets/images/wambia.jpg';
 import { 
   Code, 
   Video, 
@@ -50,22 +52,17 @@ export const About: React.FC = () => {
 
   const team = [
     {
-      name: 'Alex Chen',
+      name: 'Samuel Simiyu',
       role: 'Founder & Lead Developer',
-      bio: 'Full-stack developer with a passion for making coding accessible and fun for everyone.',
-      avatar: '👨‍💻'
+      bio: 'Full-stack developer blending code, creativity, and AI to build next-gen tools that spark innovation for creators and devs.',
+      avatar: nasri
+  
     },
     {
-      name: 'Sarah Johnson',
-      role: 'Content Creator',
-      bio: 'Creates engaging programming content and educational videos for our community.',
-      avatar: '👩‍🎨'
-    },
-    {
-      name: 'Mike Rodriguez',
-      role: 'Community Manager',
-      bio: 'Builds and nurtures our developer community, ensuring everyone feels welcome.',
-      avatar: '👨‍🚀'
+      name: 'Wambia O. Kennedy',
+      role: 'Frontend Developer & Content Creator',
+      bio: 'Passionate frontend developer and creative educator who crafts visually stunning interfaces and produces fun, insightful programming videos that inspire our community.',
+      avatar: wambia
     }
   ];
 
@@ -206,7 +203,13 @@ export const About: React.FC = () => {
                   transition={{ duration: 0.6, delay: 0.8 + index * 0.1 }}
                   className="bg-white/80 dark:bg-dark-800/80 backdrop-blur-lg rounded-2xl p-6 border border-white/20 dark:border-neon-purple/20 shadow-xl text-center hover:shadow-2xl hover:shadow-neon-purple/10 transition-all duration-300"
                 >
-                  <div className="text-6xl mb-4">{member.avatar}</div>
+                  <div className="text-6xl mb-4">
+                    <img
+                      src={member.avatar}
+                      alt="Samuel developer avatar"
+                      className="w-full h-full object-contain rounded-lg"
+                    />
+                    </div>
                   <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
                     {member.name}
                   </h3>
