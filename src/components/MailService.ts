@@ -25,14 +25,18 @@ export const sendEmail = async (formData: { name: string; email: string; subject
       params: templateParams
     });
     return { success: true };
-  } catch (error: any) {
-    console.error('Email sending failed:', {
-      message: error.message,
-      status: error.status,
-      response: error.response,
-      params: templateParams,
-      stack: error.stack // Added for more debugging info
-    });
+  } catch (error: unknown) {
+    if (typeof error === 'object' && error !== null) {
+      console.error('Email sending failed:', {
+        message: (error as { message?: string }).message,
+        status: (error as { status?: string }).status,
+        response: (error as { response?: string }).response,
+        params: templateParams,
+        stack: (error as { stack?: string }).stack // Added for more debugging info
+      });
+    } else {
+      console.error('Email sending failed:', { error, params: templateParams });
+    }
     return { success: false, error };
   }
 };
