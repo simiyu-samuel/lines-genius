@@ -46,6 +46,48 @@ router.post('/generate', optionalAuth, validate(schemas.generateLines), async (r
       }
     }
 
+    // Create default prompt if none provided or if user doesn't have custom prompts feature
+    let finalPrompt = prompt;
+    if (!finalPrompt || finalPrompt.trim() === '') {
+      // Generate a contextual default prompt based on category and tone
+      const defaultPrompts = {
+        taglines: {
+          corporate: 'Create professional business taglines that convey trust and reliability',
+          funny: 'Create humorous and memorable taglines that make people smile',
+          bold: 'Create powerful and confident taglines that command attention'
+        },
+        bios: {
+          corporate: 'Create professional social media bios for business professionals',
+          funny: 'Create witty and entertaining social media bios',
+          bold: 'Create confident and impactful social media bios'
+        },
+        captions: {
+          corporate: 'Create professional Instagram captions for business content',
+          funny: 'Create humorous Instagram captions that engage followers',
+          bold: 'Create bold and attention-grabbing Instagram captions'
+        },
+        quotes: {
+          corporate: 'Create professional and motivational quotes for business',
+          funny: 'Create humorous and lighthearted quotes',
+          bold: 'Create powerful and inspiring quotes'
+        },
+        slogans: {
+          corporate: 'Create professional marketing slogans for businesses',
+          funny: 'Create catchy and humorous marketing slogans',
+          bold: 'Create bold and memorable marketing slogans'
+        },
+        adlines: {
+          corporate: 'Create professional advertising lines for business products',
+          funny: 'Create humorous and engaging advertising lines',
+          bold: 'Create bold and impactful advertising lines'
+        }
+      };
+
+      const categoryDefaults = defaultPrompts[category as keyof typeof defaultPrompts];
+      const toneDefaults = categoryDefaults?.[tone as keyof typeof categoryDefaults];
+      finalPrompt = toneDefaults || `Create ${count} creative ${category} with a ${tone} tone`;
+    }
+
     let result;
     let serviceUsed = 'unknown';
 
@@ -55,7 +97,7 @@ router.post('/generate', optionalAuth, validate(schemas.generateLines), async (r
         result = await generateLines({
           category,
           tone,
-          prompt,
+          prompt: finalPrompt,
           count,
         });
         serviceUsed = 'openai';
@@ -66,7 +108,7 @@ router.post('/generate', optionalAuth, validate(schemas.generateLines), async (r
         result = await generateLinesWithHuggingFace({
           category,
           tone,
-          prompt,
+          prompt: finalPrompt,
           count,
         });
         serviceUsed = 'huggingface';
@@ -76,7 +118,7 @@ router.post('/generate', optionalAuth, validate(schemas.generateLines), async (r
       result = await generateLinesWithHuggingFace({
         category,
         tone,
-        prompt,
+        prompt: finalPrompt,
         count,
       });
       serviceUsed = 'huggingface';
@@ -88,7 +130,7 @@ router.post('/generate', optionalAuth, validate(schemas.generateLines), async (r
         userId,
         category,
         tone,
-        prompt,
+        prompt: finalPrompt,
         response: result.lines,
         tokens: result.usage?.total_tokens || 0,
         success: true,
