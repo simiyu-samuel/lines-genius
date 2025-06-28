@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import logo from '../assets/images/logo.png';
@@ -13,6 +13,7 @@ import {
   Laugh,
   Video
 } from 'lucide-react';
+import { sendEmail, SUBSCRIPTION_TEMPLATE_ID } from '../components/MailService'; // Import SUBSCRIPTION_TEMPLATE_ID
 
 export const Footer: React.FC = () => {
   const currentYear = new Date().getFullYear();
@@ -37,6 +38,55 @@ export const Footer: React.FC = () => {
     { icon: Code, label: 'Project Showcases' },
     { icon: Sparkles, label: 'Creative Lines' },
   ];
+
+  // State for email subscription
+  const [email, setEmail] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Handle subscription form submission
+  const handleSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setError(null);
+
+    // Validate email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError('Please enter a valid email address');
+      setIsSubmitting(false);
+      return;
+    }
+
+    // Prepare data for EmailJS subscription template
+    const subscriptionData = {
+      subscriber_email: email,
+      subscription_date: new Date().toISOString(),
+      to_email: email // Dynamic recipient set to the user's input email
+    };
+
+    try {
+      console.log('Attempting to use subscription template:', SUBSCRIPTION_TEMPLATE_ID); // Debug log
+      const result = await sendEmail(subscriptionData, SUBSCRIPTION_TEMPLATE_ID);
+      if (result.success) {
+        setIsSubscribed(true);
+        setEmail(''); // Clear the input
+        setTimeout(() => setIsSubscribed(false), 3000); // Hide success message after 3 seconds
+      } else {
+        const errorMsg = (result.error && typeof result.error === 'object' && 'message' in result.error)
+          ? (result.error as { message?: string }).message
+          : 'Unknown error occurred. Check console for details.';
+        setError(`Failed to subscribe: ${errorMsg}`);
+        console.error('Subscription error:', result.error);
+      }
+    } catch (err) {
+      setError('An unexpected error occurred. Check console for details.');
+      console.error('Subscription error:', err);
+    }
+
+    setIsSubmitting(false);
+  };
 
   return (
     <footer className="bg-gradient-to-br from-white/5 to-gray-50/5 dark:from-dark-900/50 dark:to-dark-800/50 backdrop-blur-lg border-t border-white/20 dark:border-neon-purple/20">
@@ -144,20 +194,27 @@ export const Footer: React.FC = () => {
             <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
               Get the latest programming tips, creative content, and coding humor delivered to your inbox.
             </p>
-            <div className="space-y-3">
+            <form onSubmit={handleSubscribe} className="space-y-3">
               <input
                 type="email"
                 placeholder="Enter your email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className="w-full px-4 py-2 rounded-lg bg-white/50 dark:bg-dark-700/50 border border-gray-300 dark:border-neon-purple/30 focus:ring-2 focus:ring-neon-purple focus:border-transparent transition-all duration-200 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 text-sm"
+                disabled={isSubmitting || isSubscribed}
               />
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className="w-full bg-gradient-to-r from-neon-purple to-neon-cyan text-white px-4 py-2 rounded-lg font-medium text-sm hover:shadow-lg hover:shadow-neon-purple/25 transition-all duration-200"
+                type="submit"
+                disabled={isSubmitting || isSubscribed}
+                className="w-full bg-gradient-to-r from-neon-purple to-neon-cyan text-white px-4 py-2 rounded-lg font-medium text-sm hover:shadow-lg hover:shadow-neon-purple/25 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Subscribe
+                {isSubmitting ? 'Subscribing...' : isSubscribed ? 'Subscribed!' : 'Subscribe'}
               </motion.button>
-            </div>
+              {error && <p className="text-red-500 text-sm">{error}</p>}
+              {isSubscribed && <p className="text-green-500 text-sm">Thank you for subscribing!</p>}
+            </form>
           </motion.div>
         </div>
 
