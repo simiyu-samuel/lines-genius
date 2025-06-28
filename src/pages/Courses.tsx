@@ -13,8 +13,12 @@ import {
   Code,
   Palette,
   Zap,
-  Target
+  Target,
+  CheckCircle,
+  Loader
 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { Link } from 'react-router-dom';
 
 interface Course {
   id: string;
@@ -32,9 +36,12 @@ interface Course {
 }
 
 export const Courses: React.FC = () => {
+  const { isAuthenticated } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedLevel, setSelectedLevel] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [enrolledCourses, setEnrolledCourses] = useState<string[]>([]);
+  const [enrollingCourse, setEnrollingCourse] = useState<string | null>(null);
 
   const courses: Course[] = [
     {
@@ -154,6 +161,22 @@ export const Courses: React.FC = () => {
     }
   };
 
+  const handleEnrollment = async (courseId: string) => {
+    if (!isAuthenticated) {
+      // Redirect to auth
+      window.location.href = '/auth';
+      return;
+    }
+
+    setEnrollingCourse(courseId);
+
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    setEnrolledCourses(prev => [...prev, courseId]);
+    setEnrollingCourse(null);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-white via-gray-50 to-white dark:from-dark-900 dark:via-dark-800 dark:to-dark-900 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
@@ -228,6 +251,8 @@ export const Courses: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {filteredCourses.map((course, index) => {
             const CategoryIcon = getCategoryIcon(course.category);
+            const isEnrolled = enrolledCourses.includes(course.id);
+            const isEnrolling = enrollingCourse === course.id;
             
             return (
               <motion.div
@@ -309,10 +334,30 @@ export const Courses: React.FC = () => {
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
-                      className="flex items-center space-x-2 bg-gradient-to-r from-neon-purple to-neon-cyan text-white px-4 py-2 rounded-lg font-medium transition-all duration-300 hover:shadow-lg hover:shadow-neon-purple/25"
+                      onClick={() => handleEnrollment(course.id)}
+                      disabled={isEnrolling || isEnrolled}
+                      className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
+                        isEnrolled
+                          ? 'bg-green-500 text-white'
+                          : 'bg-gradient-to-r from-neon-purple to-neon-cyan text-white hover:shadow-lg hover:shadow-neon-purple/25'
+                      } disabled:opacity-50 disabled:cursor-not-allowed`}
                     >
-                      <span>Enroll</span>
-                      <ArrowRight className="h-4 w-4" />
+                      {isEnrolling ? (
+                        <>
+                          <Loader className="h-4 w-4 animate-spin" />
+                          <span>Enrolling...</span>
+                        </>
+                      ) : isEnrolled ? (
+                        <>
+                          <CheckCircle className="h-4 w-4" />
+                          <span>Enrolled</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>Enroll</span>
+                          <ArrowRight className="h-4 w-4" />
+                        </>
+                      )}
                     </motion.button>
                   </div>
                 </div>
@@ -337,15 +382,25 @@ export const Courses: React.FC = () => {
             Let us know what you'd like to learn next!
           </p>
           
-          <motion.a
-            href="/contact"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="inline-flex items-center space-x-2 bg-gradient-to-r from-neon-purple to-neon-cyan text-white px-8 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:shadow-neon-purple/25"
-          >
-            <span>Request a Course</span>
-            <ArrowRight className="h-5 w-5" />
-          </motion.a>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            {!isAuthenticated && (
+              <Link
+                to="/auth"
+                className="inline-flex items-center space-x-2 bg-gradient-to-r from-neon-purple to-neon-cyan text-white px-8 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:shadow-neon-purple/25"
+              >
+                <BookOpen className="h-5 w-5" />
+                <span>Sign Up to Enroll</span>
+              </Link>
+            )}
+            
+            <Link
+              to="/contact"
+              className="inline-flex items-center space-x-2 bg-white/20 dark:bg-dark-700/50 text-gray-900 dark:text-white px-8 py-3 rounded-lg font-semibold border border-gray-300 dark:border-neon-purple/30 hover:bg-white/30 dark:hover:bg-dark-600/50 transition-all duration-300"
+            >
+              <span>Request a Course</span>
+              <ArrowRight className="h-5 w-5" />
+            </Link>
+          </div>
         </motion.div>
       </div>
     </div>

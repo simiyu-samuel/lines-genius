@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   Sparkles, 
@@ -65,6 +65,12 @@ const categories = [
 ];
 
 export const Landing: React.FC = () => {
+  const navigate = useNavigate();
+
+  const handleGenerateClick = () => {
+    navigate('/generate');
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-white via-gray-50 to-white dark:from-dark-900 dark:via-dark-800 dark:to-dark-900">
       {/* Hero Section */}
@@ -98,20 +104,16 @@ export const Landing: React.FC = () => {
               we've got your creativity covered.
             </p>
             
-            <motion.div
+            <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="inline-block"
+              onClick={handleGenerateClick}
+              className="group inline-flex items-center space-x-3 bg-gradient-to-r from-neon-purple to-neon-cyan text-white px-8 py-4 rounded-full text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:shadow-neon-purple/25"
             >
-              <Link
-                to="/generate"
-                className="group inline-flex items-center space-x-3 bg-gradient-to-r from-neon-purple to-neon-cyan text-white px-8 py-4 rounded-full text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:shadow-neon-purple/25"
-              >
-                <Zap className="h-6 w-6 group-hover:animate-pulse" />
-                <span>Generate Genius Lines</span>
-                <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
-              </Link>
-            </motion.div>
+              <Zap className="h-6 w-6 group-hover:animate-pulse" />
+              <span>Generate Genius Lines</span>
+              <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+            </motion.button>
           </motion.div>
         </div>
       </section>
@@ -141,7 +143,8 @@ export const Landing: React.FC = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
                 whileHover={{ y: -5, scale: 1.02 }}
-                className="group relative"
+                className="group relative cursor-pointer"
+                onClick={handleGenerateClick}
               >
                 <div className="absolute inset-0 bg-gradient-to-r opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl blur-lg"
                      style={{ background: `linear-gradient(135deg, var(--tw-gradient-stops))` }} />
