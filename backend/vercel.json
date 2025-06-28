@@ -17,25 +17,68 @@
         "Access-Control-Allow-Credentials": "true",
         "Access-Control-Allow-Origin": "https://lines-genius.vercel.app",
         "Access-Control-Allow-Methods": "GET,OPTIONS,PATCH,DELETE,POST,PUT",
-        "Access-Control-Allow-Headers": "Authorization, X-API-Key, Content-Type"
+        "Access-Control-Allow-Headers": "Authorization, X-API-Key, Content-Type, X-Requested-With, Accept, Origin",
+        "Access-Control-Max-Age": "86400",
+        "Vary": "Origin"
       },
       "status": 204
     },
     {
       "src": "/health",
-      "dest": "/api/index.ts"
+      "dest": "/api/index.ts",
+      "headers": {
+        "Access-Control-Allow-Origin": "https://lines-genius.vercel.app",
+        "Access-Control-Allow-Credentials": "true"
+      }
     },
     {
       "src": "/api/(.*)",
-      "dest": "/api/index.ts"
+      "dest": "/api/index.ts",
+      "headers": {
+        "Access-Control-Allow-Origin": "https://lines-genius.vercel.app",
+        "Access-Control-Allow-Credentials": "true",
+        "Access-Control-Allow-Methods": "GET,OPTIONS,PATCH,DELETE,POST,PUT",
+        "Access-Control-Allow-Headers": "Authorization, X-API-Key, Content-Type, X-Requested-With, Accept, Origin"
+      }
     },
     {
       "src": "/webhooks/(.*)",
-      "dest": "/api/index.ts"
+      "dest": "/api/index.ts",
+      "headers": {
+        "Access-Control-Allow-Origin": "https://lines-genius.vercel.app",
+        "Access-Control-Allow-Credentials": "true"
+      }
     },
     {
       "src": "/(.*)",
-      "dest": "/api/index.ts"
+      "dest": "/api/index.ts",
+      "headers": {
+        "Access-Control-Allow-Origin": "https://lines-genius.vercel.app",
+        "Access-Control-Allow-Credentials": "true"
+      }
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "https://lines-genius.vercel.app"
+        },
+        {
+          "key": "Access-Control-Allow-Credentials",
+          "value": "true"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET,OPTIONS,PATCH,DELETE,POST,PUT"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Authorization, X-API-Key, Content-Type, X-Requested-With, Accept, Origin"
+        }
+      ]
     }
   ],
   "env": {
