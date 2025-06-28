@@ -1,4 +1,11 @@
 import winston from 'winston';
+import fs from 'fs';
+
+// Quick fix: ensure logs directory exists or use /tmp in serverless
+const logDir = process.env.VERCEL ? '/tmp' : 'logs';
+if (!fs.existsSync(logDir)) {
+  fs.mkdirSync(logDir, { recursive: true });
+}
 
 // Simplified logger for serverless environment
 const logger = winston.createLogger({
