@@ -1,0 +1,153 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String
+  avatar    String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  savedLines    SavedLine[]
+  subscriptions Subscription[]
+  usageStats    UsageStats[]
+  payments      Payment[]
+  apiKeys       ApiKey[]
+
+  @@map("users")
+}
+
+model SavedLine {
+  id        String   @id @default(cuid())
+  text      String
+  category  String
+  tone      String
+  tags      String[]
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("saved_lines")
+}
+
+model Subscription {
+  id                String            @id @default(cuid())
+  userId            String
+  planId            String
+  status            SubscriptionStatus
+  currentPeriodEnd  DateTime
+  cancelAtPeriodEnd Boolean           @default(false)
+  stripeCustomerId  String?
+  stripeSubscriptionId String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("subscriptions")
+}
+
+model UsageStats {
+  id                 String   @id @default(cuid())
+  userId             String
+  date               DateTime @default(now())
+  dailyGenerations   Int      @default(0)
+  monthlyGenerations Int      @default(0)
+  totalGenerations   Int      @default(0)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@map("usage_stats")
+}
+
+model Payment {
+  id              String        @id @default(cuid())
+  userId          String
+  amount          Float
+  currency        String        @default("USD")
+  status          PaymentStatus
+  paymentMethod   String
+  stripePaymentId String?
+  mpesaReceiptId  String?
+  planId          String
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("payments")
+}
+
+model ApiKey {
+  id        String   @id @default(cuid())
+  userId    String
+  key       String   @unique
+  name      String
+  isActive  Boolean  @default(true)
+  lastUsed  DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("api_keys")
+}
+
+model GenerationLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  category  String
+  tone      String
+  prompt    String?
+  response  String[]
+  tokens    Int?
+  success   Boolean
+  error     String?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@map("generation_logs")
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELED
+  PAST_DUE
+  INCOMPLETE
+  INCOMPLETE_EXPIRED
+  TRIALING
+  UNPAID
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELED
+  REFUNDED
+}
