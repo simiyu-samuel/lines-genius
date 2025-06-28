@@ -33,7 +33,8 @@ const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
 
 if (missingEnvVars.length > 0) {
   console.error('❌ Missing required environment variables:', missingEnvVars);
-  if (process.env.NODE_ENV === 'production') {
+  // Don't exit in serverless environment, just log the error
+  if (process.env.NODE_ENV === 'production' && !process.env.VERCEL) {
     process.exit(1);
   }
 }
@@ -121,12 +122,17 @@ let isConnected = false;
 const initializeDatabase = async () => {
   if (!isConnected) {
     try {
-      await connectDatabase();
-      isConnected = true;
-      console.log('✅ Database connected successfully');
+      const success = await connectDatabase();
+      if (success) {
+        isConnected = true;
+        console.log('✅ Database connected successfully');
+      } else {
+        console.log('⚠️ Database connection failed, but continuing...');
+      }
     } catch (error) {
       console.error('❌ Database connection failed:', error);
-      // In a serverless env, we might not want to crash the whole function
+      // In a serverless env, we don't want to crash the whole function
+      // The function can still handle requests that don't need the database
     }
   }
 };
@@ -140,6 +146,8 @@ app.get('/health', (req, res) => {
     environment: process.env.NODE_ENV || 'development',
     database: isConnected ? 'connected' : 'disconnected',
     version: '1.0.0',
+    serverless: !!process.env.VERCEL,
+    memory: process.memoryUsage(),
   });
 });
 
