@@ -1,6 +1,6 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
-import jwt, { Secret, SignOptions } from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
 import prisma from '../config/database';
 import { AppError } from '../utils/AppError';
 import { validate, schemas } from '../middleware/validation';
@@ -23,8 +23,8 @@ const generateToken = (user: { id: string; email: string; }): string => {
     email: user.email,
   };
   
-  // Simple JWT signing without complex typing
-  return jwt.sign(payload, jwtSecret, { expiresIn: '7d' });
+  // Use type assertion to avoid TypeScript conflicts
+  return jwt.sign(payload, jwtSecret as jwt.Secret, { expiresIn: '7d' });
 };
 
 
