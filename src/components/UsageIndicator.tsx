@@ -1,15 +1,42 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Zap, Crown } from 'lucide-react';
+import { Zap, Crown, Loader } from 'lucide-react';
 import { useSubscription } from '../context/SubscriptionContext';
 import { Link } from 'react-router-dom';
 
 export const UsageIndicator: React.FC = () => {
-  const { currentPlan, usageStats, getRemainingGenerations, upgradeRequired } = useSubscription();
+  const { 
+    currentPlan, 
+    usageStats, 
+    getRemainingGenerations, 
+    upgradeRequired, 
+    isLoading,
+    refreshUsage 
+  } = useSubscription();
+
+  // Refresh usage stats when component mounts
+  useEffect(() => {
+    refreshUsage();
+  }, []);
 
   const remaining = getRemainingGenerations();
   const isUnlimited = remaining === -1;
-  const percentage = isUnlimited ? 100 : (remaining / currentPlan.limits.dailyGenerations) * 100;
+  const percentage = isUnlimited ? 100 : Math.max(0, (remaining / currentPlan.limits.dailyGenerations) * 100);
+
+  if (isLoading) {
+    return (
+      <div className="bg-white/80 dark:bg-dark-800/80 backdrop-blur-lg rounded-lg p-4 border border-white/20 dark:border-neon-purple/20">
+        <div className="flex items-center space-x-3">
+          <Loader className="h-5 w-5 text-neon-purple animate-spin" />
+          <div>
+            <p className="text-sm font-medium text-gray-900 dark:text-white">
+              Loading usage...
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (isUnlimited) {
     return (
@@ -54,6 +81,11 @@ export const UsageIndicator: React.FC = () => {
               : 'bg-gradient-to-r from-neon-pink to-neon-purple'
           }`}
         />
+      </div>
+
+      <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-3">
+        <span>Used: {usageStats.dailyGenerations}</span>
+        <span>Limit: {currentPlan.limits.dailyGenerations}</span>
       </div>
       
       {upgradeRequired && (

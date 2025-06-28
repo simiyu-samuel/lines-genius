@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Zap, 
@@ -12,14 +12,15 @@ import {
   Lock,
   AlertCircle,
   Wifi,
-  WifiOff
+  WifiOff,
+  Server
 } from 'lucide-react';
 import { generateLines } from '../services/openaiService';
-import { generateLinesFallback } from '../utils/mockAI';
 import { useSavedLines } from '../context/SavedLinesContext';
 import { useSubscription } from '../context/SubscriptionContext';
 import { UsageIndicator } from '../components/UsageIndicator';
 import { Link } from 'react-router-dom';
+import { healthAPI } from '../services/apiService';
 
 const categories = [
   { value: 'taglines', label: 'Business Taglines' },
@@ -49,16 +50,30 @@ export const Generator: React.FC = () => {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [savedIndex, setSavedIndex] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [usingFallback, setUsingFallback] = useState(false);
+  const [backendStatus, setBackendStatus] = useState<'online' | 'offline' | 'checking'>('checking');
   
   const { saveLine } = useSavedLines();
   const { 
     currentPlan, 
     canGenerate, 
     upgradeRequired, 
-    incrementUsage, 
+    refreshUsage, 
     hasFeature 
   } = useSubscription();
+
+  // Check backend status on component mount
+  useEffect(() => {
+    checkBackendStatus();
+  }, []);
+
+  const checkBackendStatus = async () => {
+    try {
+      await healthAPI.check();
+      setBackendStatus('online');
+    } catch (error) {
+      setBackendStatus('offline');
+    }
+  };
 
   const handleGenerate = async () => {
     if (isGenerating || !canGenerate) return;
@@ -66,10 +81,8 @@ export const Generator: React.FC = () => {
     setIsGenerating(true);
     setGeneratedLines([]);
     setError(null);
-    setUsingFallback(false);
     
     try {
-      // Try OpenAI first
       const response = await generateLines({ 
         category, 
         tone, 
@@ -78,27 +91,13 @@ export const Generator: React.FC = () => {
       });
       
       setGeneratedLines(response.lines);
-      incrementUsage();
       
-    } catch (openaiError) {
-      console.warn('OpenAI failed, falling back to mock AI:', openaiError);
+      // Refresh usage stats after successful generation
+      await refreshUsage();
       
-      try {
-        // Fallback to mock AI
-        setUsingFallback(true);
-        const fallbackLines = await generateLinesFallback({ 
-          category, 
-          tone, 
-          prompt: hasFeature('customPrompts') ? prompt : '' 
-        });
-        
-        setGeneratedLines(fallbackLines);
-        incrementUsage();
-        
-      } catch (fallbackError) {
-        console.error('Both OpenAI and fallback failed:', fallbackError);
-        setError('Failed to generate lines. Please try again.');
-      }
+    } catch (generationError: any) {
+      console.error('Generation failed:', generationError);
+      setError(generationError.message || 'Failed to generate lines. Please try again.');
     } finally {
       setIsGenerating(false);
     }
@@ -114,14 +113,19 @@ export const Generator: React.FC = () => {
     }
   };
 
-  const handleSaveLine = (text: string, index: number) => {
-    saveLine({
-      text,
-      category,
-      tone,
-    });
-    setSavedIndex(index);
-    setTimeout(() => setSavedIndex(null), 2000);
+  const handleSaveLine = async (text: string, index: number) => {
+    try {
+      await saveLine({
+        text,
+        category,
+        tone,
+      });
+      setSavedIndex(index);
+      setTimeout(() => setSavedIndex(null), 2000);
+    } catch (error: any) {
+      console.error('Failed to save line:', error);
+      setError(error.message || 'Failed to save line');
+    }
   };
 
   const isFeatureRestricted = (feature: string) => {
@@ -134,6 +138,28 @@ export const Generator: React.FC = () => {
         return !currentPlan.limits.categories.includes(category);
       default:
         return false;
+    }
+  };
+
+  const getStatusIcon = () => {
+    switch (backendStatus) {
+      case 'online':
+        return <Server className="h-4 w-4 text-green-500" />;
+      case 'offline':
+        return <WifiOff className="h-4 w-4 text-yellow-500" />;
+      case 'checking':
+        return <RefreshCw className="h-4 w-4 text-gray-500 animate-spin" />;
+    }
+  };
+
+  const getStatusText = () => {
+    switch (backendStatus) {
+      case 'online':
+        return 'AI-powered generation';
+      case 'offline':
+        return 'Offline mode (fallback)';
+      case 'checking':
+        return 'Checking connection...';
     }
   };
 
@@ -153,23 +179,16 @@ export const Generator: React.FC = () => {
             Powered by AI to create amazing lines for your needs. Customize your preferences below.
           </p>
           
-          {/* AI Status Indicator */}
+          {/* Backend Status Indicator */}
           <div className="flex items-center justify-center mt-4 space-x-2">
-            {usingFallback ? (
-              <>
-                <WifiOff className="h-4 w-4 text-yellow-500" />
-                <span className="text-sm text-yellow-600 dark:text-yellow-400">
-                  Using offline mode
-                </span>
-              </>
-            ) : (
-              <>
-                <Wifi className="h-4 w-4 text-green-500" />
-                <span className="text-sm text-green-600 dark:text-green-400">
-                  AI-powered generation
-                </span>
-              </>
-            )}
+            {getStatusIcon()}
+            <span className={`text-sm ${
+              backendStatus === 'online' ? 'text-green-600 dark:text-green-400' :
+              backendStatus === 'offline' ? 'text-yellow-600 dark:text-yellow-400' :
+              'text-gray-600 dark:text-gray-400'
+            }`}>
+              {getStatusText()}
+            </span>
           </div>
         </motion.div>
 
@@ -425,8 +444,8 @@ export const Generator: React.FC = () => {
           </motion.div>
         </div>
 
-        {/* OpenAI Setup Instructions */}
-        {!import.meta.env.VITE_OPENAI_API_KEY && (
+        {/* Backend Setup Instructions */}
+        {backendStatus === 'offline' && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -437,18 +456,19 @@ export const Generator: React.FC = () => {
               <AlertCircle className="h-6 w-6 text-blue-500 flex-shrink-0 mt-0.5" />
               <div>
                 <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-300 mb-2">
-                  Setup OpenAI Integration
+                  Backend Connection
                 </h3>
                 <p className="text-blue-800 dark:text-blue-200 mb-4">
-                  To enable AI-powered line generation, add your OpenAI API key to the environment variables.
+                  The backend API is not available. The app is running in fallback mode with mock AI responses.
+                  To enable full functionality, start the backend server.
                 </p>
                 <div className="bg-blue-100 dark:bg-blue-900/40 rounded-lg p-3 font-mono text-sm">
                   <p className="text-blue-900 dark:text-blue-200">
-                    VITE_OPENAI_API_KEY=your_openai_api_key_here
+                    cd backend && npm run dev
                   </p>
                 </div>
                 <p className="text-sm text-blue-700 dark:text-blue-300 mt-2">
-                  Get your API key from <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="underline">OpenAI Platform</a>
+                  Backend should be running on <code>http://localhost:3001</code>
                 </p>
               </div>
             </div>

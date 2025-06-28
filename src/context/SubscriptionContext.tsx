@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { SubscriptionPlan, UserSubscription, UsageStats } from '../types/subscription';
 import { subscriptionPlans } from '../data/subscriptionPlans';
+import { usersAPI, subscriptionsAPI } from '../services/apiService';
 import { useAuth } from './AuthContext';
 
 interface SubscriptionContextType {
@@ -9,8 +10,8 @@ interface SubscriptionContextType {
   usageStats: UsageStats;
   canGenerate: boolean;
   upgradeRequired: boolean;
-  incrementUsage: () => void;
-  resetDailyUsage: () => void;
+  isLoading: boolean;
+  refreshUsage: () => Promise<void>;
   hasFeature: (feature: keyof SubscriptionPlan['limits']) => boolean;
   getRemainingGenerations: () => number;
 }
@@ -25,6 +26,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     monthlyGenerations: 0,
     lastResetDate: Date.now()
   });
+  const [isLoading, setIsLoading] = useState(false);
 
   // Get current plan based on subscription
   const currentPlan = subscription 
@@ -33,38 +35,62 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   useEffect(() => {
     if (isAuthenticated && user) {
-      // Load subscription and usage from localStorage (in real app, this would be from API)
-      const savedSubscription = localStorage.getItem(`subscription_${user.id}`);
-      const savedUsage = localStorage.getItem(`usage_${user.id}`);
-      
-      if (savedSubscription) {
-        setSubscription(JSON.parse(savedSubscription));
-      }
-      
-      if (savedUsage) {
-        const usage = JSON.parse(savedUsage);
-        // Reset daily usage if it's a new day
-        const today = new Date().toDateString();
-        const lastReset = new Date(usage.lastResetDate).toDateString();
-        
-        if (today !== lastReset) {
-          setUsageStats({
-            ...usage,
-            dailyGenerations: 0,
-            lastResetDate: Date.now()
-          });
-        } else {
-          setUsageStats(usage);
-        }
-      }
+      loadUserData();
+    } else {
+      // Reset to default state when not authenticated
+      setSubscription(null);
+      setUsageStats({
+        dailyGenerations: 0,
+        monthlyGenerations: 0,
+        lastResetDate: Date.now()
+      });
     }
   }, [isAuthenticated, user]);
 
-  useEffect(() => {
-    if (user) {
-      localStorage.setItem(`usage_${user.id}`, JSON.stringify(usageStats));
+  const loadUserData = async () => {
+    setIsLoading(true);
+    try {
+      // Load subscription data
+      const subscriptionResponse = await subscriptionsAPI.getSubscriptions();
+      if (subscriptionResponse.success && subscriptionResponse.data?.subscriptions?.length > 0) {
+        const activeSubscription = subscriptionResponse.data.subscriptions.find(
+          (sub: any) => sub.status === 'ACTIVE'
+        );
+        if (activeSubscription) {
+          setSubscription({
+            planId: activeSubscription.planId,
+            status: activeSubscription.status.toLowerCase() as any,
+            currentPeriodEnd: new Date(activeSubscription.currentPeriodEnd).getTime(),
+            cancelAtPeriodEnd: activeSubscription.cancelAtPeriodEnd
+          });
+        }
+      }
+
+      // Load usage stats
+      await refreshUsage();
+    } catch (error) {
+      console.error('Failed to load user data:', error);
+    } finally {
+      setIsLoading(false);
     }
-  }, [usageStats, user]);
+  };
+
+  const refreshUsage = async () => {
+    if (!isAuthenticated) return;
+
+    try {
+      const response = await usersAPI.getUsageStats();
+      if (response.success && response.data) {
+        setUsageStats({
+          dailyGenerations: response.data.dailyGenerations,
+          monthlyGenerations: response.data.monthlyGenerations,
+          lastResetDate: Date.now()
+        });
+      }
+    } catch (error) {
+      console.error('Failed to refresh usage stats:', error);
+    }
+  };
 
   const canGenerate = () => {
     if (currentPlan.limits.dailyGenerations === -1) return true; // Unlimited
@@ -72,24 +98,6 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
   };
 
   const upgradeRequired = !canGenerate();
-
-  const incrementUsage = () => {
-    if (canGenerate()) {
-      setUsageStats(prev => ({
-        ...prev,
-        dailyGenerations: prev.dailyGenerations + 1,
-        monthlyGenerations: prev.monthlyGenerations + 1
-      }));
-    }
-  };
-
-  const resetDailyUsage = () => {
-    setUsageStats(prev => ({
-      ...prev,
-      dailyGenerations: 0,
-      lastResetDate: Date.now()
-    }));
-  };
 
   const hasFeature = (feature: keyof SubscriptionPlan['limits']): boolean => {
     return currentPlan.limits[feature] as boolean;
@@ -107,8 +115,8 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       usageStats,
       canGenerate: canGenerate(),
       upgradeRequired,
-      incrementUsage,
-      resetDailyUsage,
+      isLoading,
+      refreshUsage,
       hasFeature,
       getRemainingGenerations
     }}>
