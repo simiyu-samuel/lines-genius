@@ -4,13 +4,25 @@ import { AppError } from '../utils/AppError';
 
 export const validate = (schema: Joi.ObjectSchema) => {
   return (req: Request, res: Response, next: NextFunction) => {
-    const { error } = schema.validate(req.body);
+    // Clean up the request body to handle empty strings
+    const cleanBody = { ...req.body };
+    
+    // Convert empty strings to undefined for optional fields
+    Object.keys(cleanBody).forEach(key => {
+      if (cleanBody[key] === '') {
+        cleanBody[key] = undefined;
+      }
+    });
+    
+    const { error } = schema.validate(cleanBody);
     
     if (error) {
       const message = error.details.map(detail => detail.message).join(', ');
       throw new AppError(message, 400);
     }
     
+    // Update req.body with cleaned data
+    req.body = cleanBody;
     next();
   };
 };
@@ -31,7 +43,7 @@ export const schemas = {
   generateLines: Joi.object({
     category: Joi.string().valid('taglines', 'bios', 'captions', 'quotes', 'slogans', 'adlines').required(),
     tone: Joi.string().valid('funny', 'corporate', 'bold', 'romantic', 'minimalist', 'inspirational', 'motivational').optional(),
-    prompt: Joi.string().max(500).optional(),
+    prompt: Joi.string().max(500).allow('', null).optional(),
     count: Joi.number().min(1).max(10).optional(),
   }),
 

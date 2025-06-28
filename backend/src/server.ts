@@ -19,37 +19,33 @@ import paymentRoutes from './routes/payments';
 import apiRoutes from './routes/api';
 import webhookRoutes from './routes/webhooks';
 
+
+// Add this right after your imports in server.ts
+console.log('🚀 Server module loading...');
+console.log('Environment:', process.env.NODE_ENV);
+console.log('Database URL exists:', !!process.env.DATABASE_URL);
 // Load environment variables
 dotenv.config();
+
+// Validate required environment variables
+const requiredEnvVars = ['DATABASE_URL', 'JWT_SECRET'];
+const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
+
+if (missingEnvVars.length > 0) {
+  console.error('❌ Missing required environment variables:', missingEnvVars);
+  // Don't exit in serverless environment, just log the error
+  if (process.env.NODE_ENV === 'production' && !process.env.VERCEL) {
+    process.exit(1);
+  }
+}
 
 const app = express();
 
 // Trust proxy for Vercel and other platforms
 app.set('trust proxy', 1);
 
-// Rate limiting - more lenient for serverless
-const limiter = rateLimit({
-  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000'), // 15 minutes
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100'),
-  message: {
-    success: false,
-    error: 'Too many requests from this IP, please try again later.',
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-  skip: (req) => {
-    // Skip rate limiting for health checks in serverless
-    return req.path === '/health' || req.path === '/api/health';
-  }
-});
-
-// Middleware
-app.use(helmet({
-  contentSecurityPolicy: false, // Disable for serverless
-  crossOriginEmbedderPolicy: false,
-}));
-
-// CORS configuration
+// --- 1. CORS CONFIGURATION ---
+// This MUST be the first middleware to run to handle preflight requests correctly.
 const corsOptions = {
   origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
     const allowedOrigins = [
@@ -61,7 +57,7 @@ const corsOptions = {
       'https://www.linesgenius.com'
     ].filter(Boolean);
 
-    // Allow requests with no origin (mobile apps, etc.)
+    // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     
     if (allowedOrigins.includes(origin)) {
@@ -73,21 +69,51 @@ const corsOptions = {
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key'],
+  optionsSuccessStatus: 204
 };
 
+// Apply CORS middleware. It will automatically handle OPTIONS requests.
 app.use(cors(corsOptions));
+
+// --- 2. SECURITY & RATE LIMITING MIDDLEWARE ---
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000'), // 15 minutes
+  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100'),
+  message: {
+    success: false,
+    error: 'Too many requests from this IP, please try again later.',
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  // IMPORTANT: Skip preflight OPTIONS requests and health checks
+  skip: (req) => req.method === 'OPTIONS' || req.path === '/health' || req.path === '/api/health',
+});
+
+app.use(limiter);
+
+// Helmet for security headers
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false,
+}));
+
+
+// --- 3. LOGGING & BODY PARSING ---
 
 // Conditional logging for serverless
 if (process.env.NODE_ENV !== 'production') {
   app.use(morgan('combined', { stream: { write: (message) => logger.info(message.trim()) } }));
 }
 
-app.use(limiter);
-
-// Body parsing middleware
-app.use('/webhooks', express.raw({ type: 'application/json' })); // Raw body for webhooks
+// Body parsing middleware - must come after webhooks raw body parser
+app.use('/webhooks', express.raw({ type: 'application/json' })); // Raw body for Stripe webhooks
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
+
+
+// --- 4. DATABASE & HEALTH CHECKS ---
 
 // Database connection state
 let isConnected = false;
@@ -96,17 +122,22 @@ let isConnected = false;
 const initializeDatabase = async () => {
   if (!isConnected) {
     try {
-      await connectDatabase();
-      isConnected = true;
-      console.log('✅ Database connected successfully');
+      const success = await connectDatabase();
+      if (success) {
+        isConnected = true;
+        console.log('✅ Database connected successfully');
+      } else {
+        console.log('⚠️ Database connection failed, but continuing...');
+      }
     } catch (error) {
       console.error('❌ Database connection failed:', error);
-      // Don't throw error in serverless environment, continue with degraded functionality
+      // In a serverless env, we don't want to crash the whole function
+      // The function can still handle requests that don't need the database
     }
   }
 };
 
-// Health check endpoint (before database middleware)
+// Health check endpoint (can be called before database is connected)
 app.get('/health', (req, res) => {
   res.status(200).json({
     status: 'OK',
@@ -115,18 +146,22 @@ app.get('/health', (req, res) => {
     environment: process.env.NODE_ENV || 'development',
     database: isConnected ? 'connected' : 'disconnected',
     version: '1.0.0',
+    serverless: !!process.env.VERCEL,
+    memory: process.memoryUsage(),
   });
 });
 
-// Initialize database on first request (except health check)
+// Lazily initialize database on the first real request
 app.use(async (req, res, next) => {
-  if (req.path !== '/health') {
+  // Skip DB connection for health checks and webhooks that don't need it
+  if (req.path !== '/health' && !req.path.startsWith('/webhooks')) {
     await initializeDatabase();
   }
   next();
 });
 
-// API Routes
+
+// --- 5. API ROUTES ---
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/lines', linesRoutes);
@@ -135,7 +170,7 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/v1', apiRoutes); // Public API
 app.use('/webhooks', webhookRoutes);
 
-// Root endpoint for serverless
+// Root endpoint for simple checks
 app.get('/', (req, res) => {
   res.json({
     message: 'Lines Genius API',
@@ -154,25 +189,29 @@ app.get('/', (req, res) => {
   });
 });
 
-// Error handling middleware
+
+// --- 6. ERROR HANDLING ---
+// These must be the LAST middleware
 app.use(notFound);
 app.use(errorHandler);
 
-// For local development only
+
+// --- 7. LOCAL DEVELOPMENT SERVER ---
+// This block only runs when you execute `node src/server.ts` directly
+console.log(require.main === module ? 'Running in local development mode' : 'Running in production or serverless mode');
 if (process.env.NODE_ENV !== 'production' && require.main === module) {
   const PORT = process.env.PORT || 3001;
   
-  // Initialize database for local development
   initializeDatabase().then(() => {
     app.listen(PORT, () => {
-      logger.info(`🚀 Server running on port ${PORT}`);
+      logger.info(`🚀 Server running for local development on http://localhost:${PORT}`);
       logger.info(`📊 Environment: ${process.env.NODE_ENV}`);
-      logger.info(`🔗 CORS enabled for: ${process.env.CORS_ORIGIN}`);
     });
   }).catch((error) => {
-    logger.error('Failed to start server:', error);
+    logger.error('Failed to start local server:', error);
     process.exit(1);
   });
 }
 
+// Export the app for the serverless function handler
 export default app;

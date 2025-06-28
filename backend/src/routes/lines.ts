@@ -2,12 +2,35 @@ import express from 'express';
 import prisma from '../config/database';
 import { authenticate, optionalAuth } from '../middleware/auth';
 import { validate, schemas } from '../middleware/validation';
-import { generateLines } from '../services/openaiService';
+import { generateLines, testOpenAIConnection } from '../services/openaiService';
+import { generateLinesWithHuggingFace, testHuggingFaceConnection } from '../services/huggingFaceService';
 import { checkUsageLimit, incrementUsage } from '../services/usageService';
 import { AppError } from '../utils/AppError';
 import logger from '../utils/logger';
 
 const router = express.Router();
+
+// Test AI services connection (for debugging)
+router.get('/test-ai', async (req, res, next) => {
+  try {
+    const openaiConnected = await testOpenAIConnection();
+    const huggingFaceConnected = await testHuggingFaceConnection();
+    
+    res.json({
+      success: true,
+      data: {
+        openai_connected: openaiConnected,
+        huggingface_connected: huggingFaceConnected,
+        openai_api_key_configured: !!process.env.OPENAI_API_KEY,
+        openai_api_key_format: process.env.OPENAI_API_KEY ? 
+          (process.env.OPENAI_API_KEY.startsWith('sk-') ? 'valid' : 'invalid') : 'missing',
+        recommended_service: openaiConnected ? 'openai' : 'huggingface'
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
 
 // Generate lines
 router.post('/generate', optionalAuth, validate(schemas.generateLines), async (req, res, next) => {
@@ -23,13 +46,83 @@ router.post('/generate', optionalAuth, validate(schemas.generateLines), async (r
       }
     }
 
-    // Generate lines using OpenAI
-    const result = await generateLines({
-      category,
-      tone,
-      prompt,
-      count,
-    });
+    // Create default prompt if none provided or if user doesn't have custom prompts feature
+    let finalPrompt = prompt;
+    if (!finalPrompt || finalPrompt.trim() === '') {
+      // Generate a contextual default prompt based on category and tone
+      const defaultPrompts = {
+        taglines: {
+          corporate: 'Create professional business taglines that convey trust and reliability',
+          funny: 'Create humorous and memorable taglines that make people smile',
+          bold: 'Create powerful and confident taglines that command attention'
+        },
+        bios: {
+          corporate: 'Create professional social media bios for business professionals',
+          funny: 'Create witty and entertaining social media bios',
+          bold: 'Create confident and impactful social media bios'
+        },
+        captions: {
+          corporate: 'Create professional Instagram captions for business content',
+          funny: 'Create humorous Instagram captions that engage followers',
+          bold: 'Create bold and attention-grabbing Instagram captions'
+        },
+        quotes: {
+          corporate: 'Create professional and motivational quotes for business',
+          funny: 'Create humorous and lighthearted quotes',
+          bold: 'Create powerful and inspiring quotes'
+        },
+        slogans: {
+          corporate: 'Create professional marketing slogans for businesses',
+          funny: 'Create catchy and humorous marketing slogans',
+          bold: 'Create bold and memorable marketing slogans'
+        },
+        adlines: {
+          corporate: 'Create professional advertising lines for business products',
+          funny: 'Create humorous and engaging advertising lines',
+          bold: 'Create bold and impactful advertising lines'
+        }
+      };
+
+      const categoryDefaults = defaultPrompts[category as keyof typeof defaultPrompts];
+      const toneDefaults = categoryDefaults?.[tone as keyof typeof categoryDefaults];
+      finalPrompt = toneDefaults || `Create ${count} creative ${category} with a ${tone} tone`;
+    }
+
+    let result;
+    let serviceUsed = 'unknown';
+
+    // Try OpenAI first if available
+    if (process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY.startsWith('sk-')) {
+      try {
+        result = await generateLines({
+          category,
+          tone,
+          prompt: finalPrompt,
+          count,
+        });
+        serviceUsed = 'openai';
+        logger.info(`Used OpenAI for line generation: ${category}/${tone}`);
+      } catch (openaiError) {
+        logger.warn('OpenAI failed, falling back to Hugging Face:', openaiError);
+        // Fall back to Hugging Face
+        result = await generateLinesWithHuggingFace({
+          category,
+          tone,
+          prompt: finalPrompt,
+          count,
+        });
+        serviceUsed = 'huggingface';
+      }
+    } else {
+      // Use Hugging Face fallback
+      result = await generateLinesWithHuggingFace({
+        category,
+        tone,
+        prompt: finalPrompt,
+        count,
+      });
+      serviceUsed = 'huggingface';
+    }
 
     // Log the generation
     await prisma.generationLog.create({
@@ -37,9 +130,9 @@ router.post('/generate', optionalAuth, validate(schemas.generateLines), async (r
         userId,
         category,
         tone,
-        prompt,
+        prompt: finalPrompt,
         response: result.lines,
-        tokens: result.usage?.total_tokens,
+        tokens: result.usage?.total_tokens || 0,
         success: true,
         ipAddress: req.ip,
         userAgent: req.get('User-Agent'),
@@ -51,7 +144,7 @@ router.post('/generate', optionalAuth, validate(schemas.generateLines), async (r
       await incrementUsage(userId);
     }
 
-    logger.info(`Lines generated for ${userId ? 'user ' + userId : 'anonymous'}: ${category}/${tone}`);
+    logger.info(`Lines generated for ${userId ? 'user ' + userId : 'anonymous'}: ${category}/${tone} using ${serviceUsed}`);
 
     res.json({
       success: true,
@@ -60,6 +153,7 @@ router.post('/generate', optionalAuth, validate(schemas.generateLines), async (r
         usage: result.usage,
         category,
         tone,
+        service_used: serviceUsed,
       },
     });
   } catch (error) {
@@ -202,6 +296,25 @@ router.delete('/saved', authenticate, async (req, res, next) => {
     res.json({
       success: true,
       message: `${result.count} saved lines deleted successfully`,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Test OpenAI connection (for debugging)
+router.get('/test-openai', async (req, res, next) => {
+  try {
+    const isConnected = await testOpenAIConnection();
+    
+    res.json({
+      success: true,
+      data: {
+        openai_connected: isConnected,
+        api_key_configured: !!process.env.OPENAI_API_KEY,
+        api_key_format: process.env.OPENAI_API_KEY ? 
+          (process.env.OPENAI_API_KEY.startsWith('sk-') ? 'valid' : 'invalid') : 'missing'
+      }
     });
   } catch (error) {
     next(error);

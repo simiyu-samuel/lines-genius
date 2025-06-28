@@ -72,7 +72,14 @@ export const generateLines = async (request: GenerateRequest): Promise<GenerateR
 
   // Check if OpenAI API key is available
   if (!process.env.OPENAI_API_KEY) {
+    logger.error('OpenAI API key not configured');
     throw new AppError('OpenAI API key not configured', 500);
+  }
+
+  // Validate API key format
+  if (!process.env.OPENAI_API_KEY.startsWith('sk-')) {
+    logger.error('Invalid OpenAI API key format');
+    throw new AppError('Invalid OpenAI API key format', 500);
   }
 
   try {
@@ -109,6 +116,8 @@ Rules:
       userPrompt += ` Context/Requirements: ${prompt.trim()}`;
     }
 
+    logger.info(`Making OpenAI API call for category: ${category}, tone: ${tone}, count: ${count}`);
+
     // Make the API call
     const completion = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
@@ -122,7 +131,7 @@ Rules:
           content: userPrompt
         }
       ],
-      max_tokens: 300,
+      max_tokens: Math.max(300, count * 50), // Dynamic token limit
       temperature: 0.8,
       top_p: 0.9,
       frequency_penalty: 0.3,
@@ -131,6 +140,7 @@ Rules:
 
     const response = completion.choices[0]?.message?.content;
     if (!response) {
+      logger.error('Empty response from OpenAI API');
       throw new AppError('No response from OpenAI', 500);
     }
 
@@ -145,10 +155,14 @@ Rules:
 
     // Fallback if we didn't get enough lines
     if (lines.length === 0) {
+      logger.error('Failed to parse valid lines from OpenAI response', { response });
       throw new AppError('Failed to generate valid lines', 500);
     }
 
-    logger.info(`Generated ${lines.length} lines for category: ${category}, tone: ${tone}`);
+    logger.info(`Generated ${lines.length} lines for category: ${category}, tone: ${tone}`, {
+      tokens: completion.usage?.total_tokens,
+      lines: lines.length
+    });
 
     return {
       lines,
@@ -160,7 +174,12 @@ Rules:
     };
 
   } catch (error) {
-    logger.error('OpenAI API Error:', error);
+    logger.error('OpenAI API Error:', {
+      error: error instanceof Error ? error.message : error,
+      category,
+      tone,
+      count
+    });
     
     // Provide helpful error messages
     if (error instanceof Error) {
@@ -172,6 +191,9 @@ Rules:
       }
       if (error.message.includes('rate limit')) {
         throw new AppError('Rate limit exceeded', 429);
+      }
+      if (error.message.includes('model')) {
+        throw new AppError('OpenAI model not available', 500);
       }
     }
     
