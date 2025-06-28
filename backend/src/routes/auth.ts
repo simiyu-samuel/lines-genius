@@ -22,22 +22,8 @@ const generateToken = (user: { id: string; email: string; }): string => {
     userId: user.id,
     email: user.email,
   };
-
-  const secret: Secret = jwtSecret;
-
-  // Explicitly construct the options object to satisfy TypeScript's strictness
-  const options: SignOptions = {
-    // Set a known, valid default
-    expiresIn: '7d',
-  };
-
-  // If the environment variable is set, use it.
-  // This approach helps TypeScript understand the type correctly.
-  if (process.env.JWT_EXPIRES_IN) {
-    options.expiresIn = "7d";
-  }
   
-  return jwt.sign(payload, secret, options);
+  return jwt.sign(payload, jwtSecret, { expiresIn: '7d' });
 };
 
 
