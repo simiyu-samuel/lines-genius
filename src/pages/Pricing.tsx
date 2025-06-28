@@ -12,10 +12,14 @@ import {
 } from 'lucide-react';
 import { subscriptionPlans } from '../data/subscriptionPlans';
 import { useAuth } from '../context/AuthContext';
+import { PaymentModal } from '../components/PaymentModal';
+import { SubscriptionPlan } from '../types/subscription';
 
 export const Pricing: React.FC = () => {
   const { isAuthenticated } = useAuth();
   const [billingInterval, setBillingInterval] = useState<'month' | 'year'>('month');
+  const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   const getYearlyPrice = (monthlyPrice: number) => {
     return monthlyPrice * 12 * 0.8; // 20% discount for yearly
@@ -37,6 +41,29 @@ export const Pricing: React.FC = () => {
       case 'business': return 'from-neon-cyan to-neon-green';
       default: return 'from-neon-purple to-neon-cyan';
     }
+  };
+
+  const handlePlanSelect = (plan: SubscriptionPlan) => {
+    if (plan.id === 'free') {
+      // Handle free plan signup
+      return;
+    }
+    
+    if (!isAuthenticated) {
+      // Redirect to auth page
+      window.location.href = '/auth';
+      return;
+    }
+
+    setSelectedPlan(plan);
+    setShowPaymentModal(true);
+  };
+
+  const handlePaymentSuccess = (paymentId: string) => {
+    console.log('Payment successful:', paymentId);
+    // Handle successful payment - update user subscription
+    setShowPaymentModal(false);
+    setSelectedPlan(null);
   };
 
   return (
@@ -151,6 +178,7 @@ export const Pricing: React.FC = () => {
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
+                  onClick={() => handlePlanSelect(plan)}
                   className={`w-full py-3 rounded-lg font-semibold transition-all duration-300 flex items-center justify-center space-x-2 ${
                     plan.popular
                       ? 'bg-gradient-to-r from-neon-purple to-neon-cyan text-white shadow-lg hover:shadow-xl hover:shadow-neon-purple/25'
@@ -229,6 +257,10 @@ export const Pricing: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {[
               {
+                question: "What payment methods do you accept?",
+                answer: "We accept PayPal and M-Pesa payments. All transactions are secure and encrypted."
+              },
+              {
                 question: "Can I change plans anytime?",
                 answer: "Yes! You can upgrade or downgrade your plan at any time. Changes take effect immediately."
               },
@@ -239,10 +271,6 @@ export const Pricing: React.FC = () => {
               {
                 question: "Do you offer refunds?",
                 answer: "We offer a 30-day money-back guarantee for all paid plans."
-              },
-              {
-                question: "Is there an API available?",
-                answer: "Yes! Business plan includes API access with comprehensive documentation."
               }
             ].map((faq, index) => (
               <div key={index} className="bg-white/80 dark:bg-dark-800/80 backdrop-blur-lg rounded-lg p-6 border border-white/20 dark:border-neon-purple/20">
@@ -257,6 +285,19 @@ export const Pricing: React.FC = () => {
           </div>
         </motion.div>
       </div>
+
+      {/* Payment Modal */}
+      {selectedPlan && (
+        <PaymentModal
+          isOpen={showPaymentModal}
+          onClose={() => {
+            setShowPaymentModal(false);
+            setSelectedPlan(null);
+          }}
+          plan={selectedPlan}
+          onSuccess={handlePaymentSuccess}
+        />
+      )}
     </div>
   );
 };
