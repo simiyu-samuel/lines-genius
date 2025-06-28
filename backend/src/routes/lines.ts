@@ -2,7 +2,7 @@ import express from 'express';
 import prisma from '../config/database';
 import { authenticate, optionalAuth } from '../middleware/auth';
 import { validate, schemas } from '../middleware/validation';
-import { generateLines } from '../services/openaiService';
+import { generateLines, testOpenAIConnection } from '../services/openaiService';
 import { checkUsageLimit, incrementUsage } from '../services/usageService';
 import { AppError } from '../utils/AppError';
 import logger from '../utils/logger';
@@ -202,6 +202,25 @@ router.delete('/saved', authenticate, async (req, res, next) => {
     res.json({
       success: true,
       message: `${result.count} saved lines deleted successfully`,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Test OpenAI connection (for debugging)
+router.get('/test-openai', async (req, res, next) => {
+  try {
+    const isConnected = await testOpenAIConnection();
+    
+    res.json({
+      success: true,
+      data: {
+        openai_connected: isConnected,
+        api_key_configured: !!process.env.OPENAI_API_KEY,
+        api_key_format: process.env.OPENAI_API_KEY ? 
+          (process.env.OPENAI_API_KEY.startsWith('sk-') ? 'valid' : 'invalid') : 'missing'
+      }
     });
   } catch (error) {
     next(error);
