@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import logo from '../assets/images/logo.png';
 import {
@@ -15,34 +15,49 @@ import {
   CreditCard,
   Users,
   GraduationCap,
-  Code
+  Code,
+  ChevronDown
 } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { useAuth } from '../context/AuthContext';
 
 export const Header: React.FC = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, signOut, isAuthenticated } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showServicesDropdown, setShowServicesDropdown] = useState(false);
 
   const isActive = (path: string) => location.pathname === path;
 
-  const navigationItems = [
+  const mainNavigationItems = [
     { path: '/', label: 'Home', icon: Home },
     { path: '/generate', label: 'Generate', icon: Zap },
-    ...(isAuthenticated ? [{ path: '/saved', label: 'Saved', icon: BookOpen }] : []),
-    { path: '/courses', label: 'Courses', icon: GraduationCap },
-    { path: '/community', label: 'Community', icon: Users },
-    { path: '/pricing', label: 'Pricing', icon: CreditCard },
-    { path: '/api-docs', label: 'API', icon: Code },
     { path: '/about', label: 'About', icon: Info },
     { path: '/contact', label: 'Contact', icon: Mail },
   ];
 
+  const servicesItems = [
+    { path: '/courses', label: 'Courses', icon: GraduationCap, description: 'Learn new skills' },
+    { path: '/community', label: 'Community', icon: Users, description: 'Join our network' },
+    { path: '/pricing', label: 'Pricing', icon: CreditCard, description: 'Choose your plan' },
+    { path: '/api-docs', label: 'API', icon: Code, description: 'Developer tools' },
+  ];
+
+  const userNavigationItems = isAuthenticated 
+    ? [{ path: '/saved', label: 'Saved Lines', icon: BookOpen }]
+    : [];
+
   const handleSignOut = () => {
     signOut();
     setShowUserMenu(false);
+  };
+
+  const handleNavigation = (path: string) => {
+    navigate(path);
+    setIsMenuOpen(false);
+    setShowServicesDropdown(false);
   };
 
   return (
@@ -54,16 +69,17 @@ export const Header: React.FC = () => {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          <Link to="/" className="flex items-center space-x-2 group">
+          {/* Logo */}
+          <Link to="/" className="flex items-center space-x-3 group">
             <motion.div
               whileHover={{ rotate: 180, scale: 1.1 }}
               transition={{ duration: 0.3 }}
-              className="rounded-lg bg-gradient-to-r from-neon-purple to-neon-cyan w-10 h-10"
+              className="rounded-lg bg-gradient-to-r from-neon-purple to-neon-cyan w-10 h-10 flex items-center justify-center"
             >
               <img
                 src={logo}
                 alt="Lines Genius Logo"
-                className="w-full h-full object-contain rounded-lg"
+                className="w-8 h-8 object-contain"
               />
             </motion.div>
 
@@ -79,7 +95,72 @@ export const Header: React.FC = () => {
 
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center space-x-1">
-            {navigationItems.map(({ path, label, icon: Icon }) => (
+            {/* Main Navigation */}
+            {mainNavigationItems.map(({ path, label, icon: Icon }) => (
+              <Link
+                key={path}
+                to={path}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 ${
+                  isActive(path)
+                    ? 'bg-gradient-to-r from-neon-purple/20 to-neon-cyan/20 text-neon-cyan border border-neon-cyan/30'
+                    : 'text-gray-600 dark:text-gray-300 hover:text-neon-purple dark:hover:text-neon-cyan hover:bg-white/10 dark:hover:bg-white/5'
+                }`}
+              >
+                <Icon className="h-4 w-4" />
+                <span className="font-medium">{label}</span>
+              </Link>
+            ))}
+
+            {/* Services Dropdown */}
+            <div 
+              className="relative"
+              onMouseEnter={() => setShowServicesDropdown(true)}
+              onMouseLeave={() => setShowServicesDropdown(false)}
+            >
+              <button
+                className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 ${
+                  servicesItems.some(item => isActive(item.path))
+                    ? 'bg-gradient-to-r from-neon-purple/20 to-neon-cyan/20 text-neon-cyan border border-neon-cyan/30'
+                    : 'text-gray-600 dark:text-gray-300 hover:text-neon-purple dark:hover:text-neon-cyan hover:bg-white/10 dark:hover:bg-white/5'
+                }`}
+              >
+                <span className="font-medium">Services</span>
+                <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${showServicesDropdown ? 'rotate-180' : ''}`} />
+              </button>
+
+              <AnimatePresence>
+                {showServicesDropdown && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute top-full left-0 mt-2 w-72 bg-white/95 dark:bg-dark-800/95 backdrop-blur-lg rounded-xl shadow-2xl border border-white/20 dark:border-neon-purple/20 py-2 z-50"
+                  >
+                    {servicesItems.map((item) => (
+                      <Link
+                        key={item.path}
+                        to={item.path}
+                        className={`flex items-center space-x-3 px-4 py-3 hover:bg-white/50 dark:hover:bg-dark-700/50 transition-colors duration-200 ${
+                          isActive(item.path) ? 'bg-neon-purple/10 text-neon-purple' : 'text-gray-700 dark:text-gray-300'
+                        }`}
+                      >
+                        <div className={`p-2 rounded-lg ${isActive(item.path) ? 'bg-neon-purple/20' : 'bg-gray-100 dark:bg-dark-700'}`}>
+                          <item.icon className={`h-4 w-4 ${isActive(item.path) ? 'text-neon-purple' : 'text-gray-600 dark:text-gray-400'}`} />
+                        </div>
+                        <div>
+                          <div className="font-medium">{item.label}</div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">{item.description}</div>
+                        </div>
+                      </Link>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* User Navigation */}
+            {userNavigationItems.map(({ path, label, icon: Icon }) => (
               <Link
                 key={path}
                 to={path}
@@ -95,7 +176,8 @@ export const Header: React.FC = () => {
             ))}
           </nav>
 
-          <div className="flex items-center space-x-4">
+          {/* Right Side Actions */}
+          <div className="flex items-center space-x-3">
             <ThemeToggle />
             
             {/* User Menu */}
@@ -113,6 +195,7 @@ export const Header: React.FC = () => {
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-300 hidden md:block">
                     {user?.name}
                   </span>
+                  <ChevronDown className="h-4 w-4 text-gray-500 hidden md:block" />
                 </motion.button>
 
                 <AnimatePresence>
@@ -122,12 +205,29 @@ export const Header: React.FC = () => {
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 10, scale: 0.95 }}
                       transition={{ duration: 0.2 }}
-                      className="absolute right-0 mt-2 w-48 bg-white/90 dark:bg-dark-800/90 backdrop-blur-lg rounded-lg shadow-xl border border-white/20 dark:border-neon-purple/20 py-2"
+                      className="absolute right-0 mt-2 w-56 bg-white/95 dark:bg-dark-800/95 backdrop-blur-lg rounded-xl shadow-2xl border border-white/20 dark:border-neon-purple/20 py-2 z-50"
                     >
-                      <div className="px-4 py-2 border-b border-gray-200 dark:border-neon-purple/20">
+                      <div className="px-4 py-3 border-b border-gray-200 dark:border-neon-purple/20">
                         <p className="text-sm font-medium text-gray-900 dark:text-white">{user?.name}</p>
                         <p className="text-xs text-gray-500 dark:text-gray-400">{user?.email}</p>
                       </div>
+                      
+                      <Link
+                        to="/saved"
+                        className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-white/50 dark:hover:bg-dark-700/50 transition-colors"
+                      >
+                        <BookOpen className="h-4 w-4" />
+                        <span>Saved Lines</span>
+                      </Link>
+                      
+                      <Link
+                        to="/pricing"
+                        className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-white/50 dark:hover:bg-dark-700/50 transition-colors"
+                      >
+                        <CreditCard className="h-4 w-4" />
+                        <span>Subscription</span>
+                      </Link>
+                      
                       <button
                         onClick={handleSignOut}
                         className="w-full flex items-center space-x-2 px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
@@ -170,12 +270,12 @@ export const Header: React.FC = () => {
               className="lg:hidden border-t border-white/20 dark:border-neon-purple/20 py-4"
             >
               <nav className="flex flex-col space-y-2">
-                {navigationItems.map(({ path, label, icon: Icon }) => (
-                  <Link
+                {/* Main Navigation */}
+                {mainNavigationItems.map(({ path, label, icon: Icon }) => (
+                  <button
                     key={path}
-                    to={path}
-                    onClick={() => setIsMenuOpen(false)}
-                    className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+                    onClick={() => handleNavigation(path)}
+                    className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 text-left ${
                       isActive(path)
                         ? 'bg-gradient-to-r from-neon-purple/20 to-neon-cyan/20 text-neon-cyan border border-neon-cyan/30'
                         : 'text-gray-600 dark:text-gray-300 hover:text-neon-purple dark:hover:text-neon-cyan hover:bg-white/10 dark:hover:bg-white/5'
@@ -183,7 +283,44 @@ export const Header: React.FC = () => {
                   >
                     <Icon className="h-5 w-5" />
                     <span className="font-medium">{label}</span>
-                  </Link>
+                  </button>
+                ))}
+
+                {/* Services */}
+                <div className="px-4 py-2">
+                  <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+                    Services
+                  </div>
+                  {servicesItems.map(({ path, label, icon: Icon }) => (
+                    <button
+                      key={path}
+                      onClick={() => handleNavigation(path)}
+                      className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 text-left w-full ${
+                        isActive(path)
+                          ? 'bg-gradient-to-r from-neon-purple/20 to-neon-cyan/20 text-neon-cyan border border-neon-cyan/30'
+                          : 'text-gray-600 dark:text-gray-300 hover:text-neon-purple dark:hover:text-neon-cyan hover:bg-white/10 dark:hover:bg-white/5'
+                      }`}
+                    >
+                      <Icon className="h-5 w-5" />
+                      <span className="font-medium">{label}</span>
+                    </button>
+                  ))}
+                </div>
+
+                {/* User Navigation */}
+                {userNavigationItems.map(({ path, label, icon: Icon }) => (
+                  <button
+                    key={path}
+                    onClick={() => handleNavigation(path)}
+                    className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 text-left ${
+                      isActive(path)
+                        ? 'bg-gradient-to-r from-neon-purple/20 to-neon-cyan/20 text-neon-cyan border border-neon-cyan/30'
+                        : 'text-gray-600 dark:text-gray-300 hover:text-neon-purple dark:hover:text-neon-cyan hover:bg-white/10 dark:hover:bg-white/5'
+                    }`}
+                  >
+                    <Icon className="h-5 w-5" />
+                    <span className="font-medium">{label}</span>
+                  </button>
                 ))}
               </nav>
             </motion.div>

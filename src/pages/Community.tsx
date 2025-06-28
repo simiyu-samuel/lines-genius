@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Users, 
@@ -11,10 +11,22 @@ import {
   ArrowRight,
   Crown,
   Zap,
-  Heart
+  Heart,
+  CheckCircle,
+  Loader
 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { Link } from 'react-router-dom';
 
 export const Community: React.FC = () => {
+  const { isAuthenticated } = useAuth();
+  const [selectedTier, setSelectedTier] = useState<string | null>(null);
+  const [isJoining, setIsJoining] = useState(false);
+  const [joinedTier, setJoinedTier] = useState<string | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<string | null>(null);
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [registeredEvents, setRegisteredEvents] = useState<string[]>([]);
+
   const communityFeatures = [
     {
       icon: MessageCircle,
@@ -77,27 +89,72 @@ export const Community: React.FC = () => {
 
   const upcomingEvents = [
     {
+      id: 'react-masterclass',
       title: 'React Masterclass: Building Modern UIs',
       date: 'March 15, 2025',
       time: '2:00 PM EST',
       type: 'Workshop',
-      price: 49
+      price: 49,
+      spots: 25
     },
     {
+      id: 'content-creation',
       title: 'Content Creation for Developers',
       date: 'March 22, 2025',
       time: '1:00 PM EST',
       type: 'Live Session',
-      price: 25
+      price: 25,
+      spots: 50
     },
     {
+      id: 'ai-marketing',
       title: 'AI-Powered Marketing Strategies',
       date: 'March 29, 2025',
       time: '3:00 PM EST',
       type: 'Masterclass',
-      price: 75
+      price: 75,
+      spots: 15
     }
   ];
+
+  const handleJoinCommunity = async (tierId: string) => {
+    if (!isAuthenticated) {
+      // Redirect to auth
+      window.location.href = '/auth';
+      return;
+    }
+
+    setSelectedTier(tierId);
+    setIsJoining(true);
+
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    setJoinedTier(tierId);
+    setIsJoining(false);
+    setSelectedTier(null);
+
+    // Reset after 3 seconds
+    setTimeout(() => setJoinedTier(null), 3000);
+  };
+
+  const handleEventRegistration = async (eventId: string) => {
+    if (!isAuthenticated) {
+      // Redirect to auth
+      window.location.href = '/auth';
+      return;
+    }
+
+    setSelectedEvent(eventId);
+    setIsRegistering(true);
+
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    setRegisteredEvents(prev => [...prev, eventId]);
+    setIsRegistering(false);
+    setSelectedEvent(null);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-white via-gray-50 to-white dark:from-dark-900 dark:via-dark-800 dark:to-dark-900 py-12 px-4 sm:px-6 lg:px-8">
@@ -126,9 +183,9 @@ export const Community: React.FC = () => {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: index * 0.1 }}
-              className="bg-white/80 dark:bg-dark-800/80 backdrop-blur-lg rounded-2xl p-6 border border-white/20 dark:border-neon-purple/20 shadow-xl hover:shadow-2xl hover:shadow-neon-purple/10 transition-all duration-300 text-center"
+              className="group bg-white/80 dark:bg-dark-800/80 backdrop-blur-lg rounded-2xl p-6 border border-white/20 dark:border-neon-purple/20 shadow-xl hover:shadow-2xl hover:shadow-neon-purple/10 transition-all duration-300 text-center"
             >
-              <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-r ${feature.gradient} mb-4`}>
+              <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-r ${feature.gradient} mb-4 group-hover:animate-pulse`}>
                 <feature.icon className="h-8 w-8 text-white" />
               </div>
               <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
@@ -205,14 +262,32 @@ export const Community: React.FC = () => {
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
+                  onClick={() => handleJoinCommunity(tier.id)}
+                  disabled={isJoining && selectedTier === tier.id}
                   className={`w-full py-3 rounded-lg font-semibold transition-all duration-300 flex items-center justify-center space-x-2 ${
-                    tier.popular
+                    joinedTier === tier.id
+                      ? 'bg-green-500 text-white'
+                      : tier.popular
                       ? 'bg-gradient-to-r from-neon-purple to-neon-cyan text-white shadow-lg hover:shadow-xl hover:shadow-neon-purple/25'
                       : 'bg-white/20 dark:bg-dark-700/50 text-gray-900 dark:text-white border border-gray-300 dark:border-neon-purple/30 hover:bg-white/30 dark:hover:bg-dark-600/50'
-                  }`}
+                  } disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
-                  <span>Join {tier.name}</span>
-                  <ArrowRight className="h-4 w-4" />
+                  {isJoining && selectedTier === tier.id ? (
+                    <>
+                      <Loader className="h-4 w-4 animate-spin" />
+                      <span>Joining...</span>
+                    </>
+                  ) : joinedTier === tier.id ? (
+                    <>
+                      <CheckCircle className="h-4 w-4" />
+                      <span>Joined!</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Join {tier.name}</span>
+                      <ArrowRight className="h-4 w-4" />
+                    </>
+                  )}
                 </motion.button>
               </motion.div>
             ))}
@@ -233,7 +308,7 @@ export const Community: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {upcomingEvents.map((event, index) => (
               <motion.div
-                key={index}
+                key={event.id}
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 1.0 + index * 0.1 }}
@@ -252,7 +327,7 @@ export const Community: React.FC = () => {
                   {event.title}
                 </h3>
                 
-                <div className="space-y-2 mb-6">
+                <div className="space-y-2 mb-4">
                   <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-300">
                     <Calendar className="h-4 w-4" />
                     <span>{event.date}</span>
@@ -261,14 +336,36 @@ export const Community: React.FC = () => {
                     <Zap className="h-4 w-4" />
                     <span>{event.time}</span>
                   </div>
+                  <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-300">
+                    <Users className="h-4 w-4" />
+                    <span>{event.spots} spots available</span>
+                  </div>
                 </div>
 
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className="w-full bg-gradient-to-r from-neon-purple to-neon-cyan text-white py-2 rounded-lg font-medium transition-all duration-300 hover:shadow-lg hover:shadow-neon-purple/25"
+                  onClick={() => handleEventRegistration(event.id)}
+                  disabled={isRegistering && selectedEvent === event.id}
+                  className={`w-full py-2 rounded-lg font-medium transition-all duration-300 flex items-center justify-center space-x-2 ${
+                    registeredEvents.includes(event.id)
+                      ? 'bg-green-500 text-white'
+                      : 'bg-gradient-to-r from-neon-purple to-neon-cyan text-white hover:shadow-lg hover:shadow-neon-purple/25'
+                  } disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
-                  Register Now
+                  {isRegistering && selectedEvent === event.id ? (
+                    <>
+                      <Loader className="h-4 w-4 animate-spin" />
+                      <span>Registering...</span>
+                    </>
+                  ) : registeredEvents.includes(event.id) ? (
+                    <>
+                      <CheckCircle className="h-4 w-4" />
+                      <span>Registered</span>
+                    </>
+                  ) : (
+                    <span>Register Now</span>
+                  )}
                 </motion.button>
               </motion.div>
             ))}
@@ -292,24 +389,33 @@ export const Community: React.FC = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="inline-flex items-center space-x-2 bg-gradient-to-r from-neon-purple to-neon-cyan text-white px-8 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:shadow-neon-purple/25"
-            >
-              <Users className="h-5 w-5" />
-              <span>Join Community</span>
-            </motion.button>
+            {!isAuthenticated ? (
+              <Link
+                to="/auth"
+                className="inline-flex items-center space-x-2 bg-gradient-to-r from-neon-purple to-neon-cyan text-white px-8 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:shadow-neon-purple/25"
+              >
+                <Users className="h-5 w-5" />
+                <span>Sign Up to Join</span>
+              </Link>
+            ) : (
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => handleJoinCommunity('community')}
+                className="inline-flex items-center space-x-2 bg-gradient-to-r from-neon-purple to-neon-cyan text-white px-8 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:shadow-neon-purple/25"
+              >
+                <Users className="h-5 w-5" />
+                <span>Join Community</span>
+              </motion.button>
+            )}
             
-            <motion.a
-              href="/contact"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+            <Link
+              to="/contact"
               className="inline-flex items-center space-x-2 bg-white/20 dark:bg-dark-700/50 text-gray-900 dark:text-white px-8 py-3 rounded-lg font-semibold border border-gray-300 dark:border-neon-purple/30 hover:bg-white/30 dark:hover:bg-dark-600/50 transition-all duration-300"
             >
               <MessageCircle className="h-5 w-5" />
               <span>Learn More</span>
-            </motion.a>
+            </Link>
           </div>
         </motion.div>
       </div>
