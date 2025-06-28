@@ -17,6 +17,8 @@ const createPrismaClient = () => {
     throw new Error('DATABASE_URL is required');
   }
 
+  console.log('🔌 Creating Prisma client with URL:', databaseUrl.replace(/:[^:@]*@/, ':****@'));
+
   return new PrismaClient({
     log: process.env.NODE_ENV === 'development' ? ['query', 'info', 'warn', 'error'] : ['error', 'warn'],
     datasources: {
@@ -46,7 +48,8 @@ export const connectDatabase = async () => {
     console.log('Database URL exists:', !!process.env.DATABASE_URL);
     console.log('Environment:', process.env.NODE_ENV);
     
-    await prisma.$connect();
+    // Test the connection with a simple query
+    await prisma.$queryRaw`SELECT 1 as test`;
     console.log('✅ Database connected successfully');
     return true;
   } catch (error) {
@@ -73,6 +76,39 @@ export const disconnectDatabase = async () => {
     console.log('✅ Database disconnected successfully');
   } catch (error) {
     console.error('❌ Database disconnection failed:', error);
+  }
+};
+
+// Test database connection function
+export const testDatabaseConnection = async () => {
+  try {
+    console.log('🧪 Testing database connection...');
+    
+    // Test basic connection
+    await prisma.$queryRaw`SELECT 1 as test`;
+    console.log('✅ Basic connection test passed');
+    
+    // Test if users table exists
+    const userCount = await prisma.user.count();
+    console.log(`✅ Users table accessible, count: ${userCount}`);
+    
+    // Test if other tables exist
+    const tablesExist = await Promise.allSettled([
+      prisma.savedLine.count(),
+      prisma.usageStats.count(),
+      prisma.generationLog.count()
+    ]);
+    
+    console.log('✅ Table accessibility test:', {
+      savedLines: tablesExist[0].status === 'fulfilled',
+      usageStats: tablesExist[1].status === 'fulfilled',
+      generationLogs: tablesExist[2].status === 'fulfilled'
+    });
+    
+    return true;
+  } catch (error) {
+    console.error('❌ Database test failed:', error);
+    return false;
   }
 };
 

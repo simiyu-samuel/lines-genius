@@ -8,7 +8,7 @@ import rateLimit from 'express-rate-limit';
 import { errorHandler } from './middleware/errorHandler';
 import { notFound } from './middleware/notFound';
 import logger from './utils/logger';
-import { connectDatabase } from './config/database';
+import { connectDatabase, testDatabaseConnection } from './config/database';
 
 // Import routes
 import authRoutes from './routes/auth';
@@ -19,11 +19,11 @@ import paymentRoutes from './routes/payments';
 import apiRoutes from './routes/api';
 import webhookRoutes from './routes/webhooks';
 
-
 // Add this right after your imports in server.ts
 console.log('🚀 Server module loading...');
 console.log('Environment:', process.env.NODE_ENV);
 console.log('Database URL exists:', !!process.env.DATABASE_URL);
+
 // Load environment variables
 dotenv.config();
 
@@ -45,7 +45,6 @@ const app = express();
 app.set('trust proxy', 1);
 
 // --- 1. CORS CONFIGURATION ---
-// This MUST be the first middleware to run to handle preflight requests correctly.
 const corsOptions = {
   origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
     const allowedOrigins = [
@@ -63,6 +62,7 @@ const corsOptions = {
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
+      console.warn(`⚠️ CORS blocked origin: ${origin}`);
       callback(new Error('Not allowed by CORS'));
     }
   },
@@ -72,12 +72,10 @@ const corsOptions = {
   optionsSuccessStatus: 204
 };
 
-// Apply CORS middleware. It will automatically handle OPTIONS requests.
+// Apply CORS middleware
 app.use(cors(corsOptions));
 
 // --- 2. SECURITY & RATE LIMITING MIDDLEWARE ---
-
-// Rate limiting
 const limiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000'), // 15 minutes
   max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100'),
@@ -87,7 +85,6 @@ const limiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
-  // IMPORTANT: Skip preflight OPTIONS requests and health checks
   skip: (req) => req.method === 'OPTIONS' || req.path === '/health' || req.path === '/api/health',
 });
 
@@ -99,47 +96,48 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false,
 }));
 
-
 // --- 3. LOGGING & BODY PARSING ---
-
-// Conditional logging for serverless
 if (process.env.NODE_ENV !== 'production') {
   app.use(morgan('combined', { stream: { write: (message) => logger.info(message.trim()) } }));
 }
 
-// Body parsing middleware - must come after webhooks raw body parser
-app.use('/webhooks', express.raw({ type: 'application/json' })); // Raw body for Stripe webhooks
+// Body parsing middleware
+app.use('/webhooks', express.raw({ type: 'application/json' }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-
 // --- 4. DATABASE & HEALTH CHECKS ---
-
-// Database connection state
 let isConnected = false;
 
-// Initialize database connection for serverless
+// Initialize database connection
 const initializeDatabase = async () => {
   if (!isConnected) {
     try {
+      console.log('🔌 Initializing database connection...');
       const success = await connectDatabase();
       if (success) {
         isConnected = true;
-        console.log('✅ Database connected successfully');
+        console.log('✅ Database initialized successfully');
+        
+        // Test database functionality
+        const testResult = await testDatabaseConnection();
+        if (testResult) {
+          console.log('✅ Database functionality test passed');
+        } else {
+          console.log('⚠️ Database functionality test failed');
+        }
       } else {
         console.log('⚠️ Database connection failed, but continuing...');
       }
     } catch (error) {
-      console.error('❌ Database connection failed:', error);
-      // In a serverless env, we don't want to crash the whole function
-      // The function can still handle requests that don't need the database
+      console.error('❌ Database initialization failed:', error);
     }
   }
 };
 
-// Health check endpoint (can be called before database is connected)
-app.get('/health', (req, res) => {
-  res.status(200).json({
+// Enhanced health check endpoint
+app.get('/health', async (req, res) => {
+  const healthData = {
     status: 'OK',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
@@ -148,7 +146,19 @@ app.get('/health', (req, res) => {
     version: '1.0.0',
     serverless: !!process.env.VERCEL,
     memory: process.memoryUsage(),
-  });
+  };
+
+  // Test database if connected
+  if (isConnected) {
+    try {
+      const dbTest = await testDatabaseConnection();
+      healthData.database = dbTest ? 'healthy' : 'unhealthy';
+    } catch (error) {
+      healthData.database = 'error';
+    }
+  }
+
+  res.status(200).json(healthData);
 });
 
 // Lazily initialize database on the first real request
@@ -160,23 +170,23 @@ app.use(async (req, res, next) => {
   next();
 });
 
-
 // --- 5. API ROUTES ---
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/lines', linesRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/payments', paymentRoutes);
-app.use('/api/v1', apiRoutes); // Public API
+app.use('/api/v1', apiRoutes);
 app.use('/webhooks', webhookRoutes);
 
-// Root endpoint for simple checks
+// Root endpoint
 app.get('/', (req, res) => {
   res.json({
     message: 'Lines Genius API',
     version: '1.0.0',
     status: 'running',
     timestamp: new Date().toISOString(),
+    database: isConnected ? 'connected' : 'disconnected',
     endpoints: {
       health: '/health',
       auth: '/api/auth',
@@ -189,15 +199,11 @@ app.get('/', (req, res) => {
   });
 });
 
-
 // --- 6. ERROR HANDLING ---
-// These must be the LAST middleware
 app.use(notFound);
 app.use(errorHandler);
 
-
 // --- 7. LOCAL DEVELOPMENT SERVER ---
-// This block only runs when you execute `node src/server.ts` directly
 console.log(require.main === module ? 'Running in local development mode' : 'Running in production or serverless mode');
 if (process.env.NODE_ENV !== 'production' && require.main === module) {
   const PORT = process.env.PORT || 3001;
