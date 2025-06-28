@@ -23,6 +23,7 @@ const generateToken = (user: { id: string; email: string; }): string => {
     email: user.email,
   };
   
+  // Simple JWT signing without complex typing
   return jwt.sign(payload, jwtSecret, { expiresIn: '7d' });
 };
 
