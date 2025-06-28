@@ -1,3 +1,4 @@
+// Fallback mock AI for when OpenAI is not available
 export interface GenerateRequest {
   category: string;
   tone?: string;
@@ -124,7 +125,7 @@ const mockLines = {
   }
 };
 
-export const generateLines = async (request: GenerateRequest): Promise<string[]> => {
+export const generateLinesFallback = async (request: GenerateRequest): Promise<string[]> => {
   // Simulate API delay
   await new Promise(resolve => setTimeout(resolve, 1500));
   

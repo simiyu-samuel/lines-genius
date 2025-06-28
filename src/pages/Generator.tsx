@@ -9,9 +9,13 @@ import {
   RefreshCw,
   CheckCircle,
   Crown,
-  Lock
+  Lock,
+  AlertCircle,
+  Wifi,
+  WifiOff
 } from 'lucide-react';
-import { generateLines } from '../utils/mockAI';
+import { generateLines } from '../services/openaiService';
+import { generateLinesFallback } from '../utils/mockAI';
 import { useSavedLines } from '../context/SavedLinesContext';
 import { useSubscription } from '../context/SubscriptionContext';
 import { UsageIndicator } from '../components/UsageIndicator';
@@ -44,6 +48,8 @@ export const Generator: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [savedIndex, setSavedIndex] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [usingFallback, setUsingFallback] = useState(false);
   
   const { saveLine } = useSavedLines();
   const { 
@@ -59,14 +65,40 @@ export const Generator: React.FC = () => {
     
     setIsGenerating(true);
     setGeneratedLines([]);
+    setError(null);
+    setUsingFallback(false);
     
     try {
-      const lines = await generateLines({ category, tone, prompt });
-      setGeneratedLines(lines);
+      // Try OpenAI first
+      const response = await generateLines({ 
+        category, 
+        tone, 
+        prompt: hasFeature('customPrompts') ? prompt : '',
+        count: 4 
+      });
+      
+      setGeneratedLines(response.lines);
       incrementUsage();
-    } catch (error) {
-      console.error('Error generating lines:', error);
-      setGeneratedLines(['Sorry, something went wrong. Please try again.']);
+      
+    } catch (openaiError) {
+      console.warn('OpenAI failed, falling back to mock AI:', openaiError);
+      
+      try {
+        // Fallback to mock AI
+        setUsingFallback(true);
+        const fallbackLines = await generateLinesFallback({ 
+          category, 
+          tone, 
+          prompt: hasFeature('customPrompts') ? prompt : '' 
+        });
+        
+        setGeneratedLines(fallbackLines);
+        incrementUsage();
+        
+      } catch (fallbackError) {
+        console.error('Both OpenAI and fallback failed:', fallbackError);
+        setError('Failed to generate lines. Please try again.');
+      }
     } finally {
       setIsGenerating(false);
     }
@@ -118,8 +150,27 @@ export const Generator: React.FC = () => {
             Generate Creative Lines
           </h1>
           <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-            Customize your preferences and let AI create amazing lines for your needs.
+            Powered by AI to create amazing lines for your needs. Customize your preferences below.
           </p>
+          
+          {/* AI Status Indicator */}
+          <div className="flex items-center justify-center mt-4 space-x-2">
+            {usingFallback ? (
+              <>
+                <WifiOff className="h-4 w-4 text-yellow-500" />
+                <span className="text-sm text-yellow-600 dark:text-yellow-400">
+                  Using offline mode
+                </span>
+              </>
+            ) : (
+              <>
+                <Wifi className="h-4 w-4 text-green-500" />
+                <span className="text-sm text-green-600 dark:text-green-400">
+                  AI-powered generation
+                </span>
+              </>
+            )}
+          </div>
         </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -270,7 +321,21 @@ export const Generator: React.FC = () => {
 
             <div className="space-y-4">
               <AnimatePresence mode="wait">
-                {isGenerating ? (
+                {error ? (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <AlertCircle className="h-5 w-5 text-red-500" />
+                      <span className="text-sm text-red-700 dark:text-red-300">
+                        {error}
+                      </span>
+                    </div>
+                  </motion.div>
+                ) : isGenerating ? (
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
@@ -359,6 +424,36 @@ export const Generator: React.FC = () => {
             </div>
           </motion.div>
         </div>
+
+        {/* OpenAI Setup Instructions */}
+        {!import.meta.env.VITE_OPENAI_API_KEY && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.8 }}
+            className="mt-8 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6"
+          >
+            <div className="flex items-start space-x-3">
+              <AlertCircle className="h-6 w-6 text-blue-500 flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-300 mb-2">
+                  Setup OpenAI Integration
+                </h3>
+                <p className="text-blue-800 dark:text-blue-200 mb-4">
+                  To enable AI-powered line generation, add your OpenAI API key to the environment variables.
+                </p>
+                <div className="bg-blue-100 dark:bg-blue-900/40 rounded-lg p-3 font-mono text-sm">
+                  <p className="text-blue-900 dark:text-blue-200">
+                    VITE_OPENAI_API_KEY=your_openai_api_key_here
+                  </p>
+                </div>
+                <p className="text-sm text-blue-700 dark:text-blue-300 mt-2">
+                  Get your API key from <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="underline">OpenAI Platform</a>
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
       </div>
     </div>
   );
