@@ -8,6 +8,7 @@ const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 30000, // 30 second timeout
 });
 
 // Request interceptor to add auth token
@@ -32,8 +33,8 @@ apiClient.interceptors.response.use(
       // Clear invalid token
       localStorage.removeItem('linesGenius_token');
       localStorage.removeItem('linesGenius_user');
-      // Redirect to login if needed
-      if (window.location.pathname !== '/auth') {
+      // Only redirect if not already on auth page
+      if (window.location.pathname !== '/auth' && window.location.pathname !== '/') {
         window.location.href = '/auth';
       }
     }
@@ -220,13 +221,19 @@ export const paymentsAPI = {
 // Health check
 export const healthAPI = {
   check: async () => {
-    const response: AxiosResponse<{
-      status: string;
-      timestamp: string;
-      uptime: number;
-      environment: string;
-    }> = await apiClient.get('/health');
-    return response.data;
+    try {
+      const response: AxiosResponse<{
+        status: string;
+        timestamp: string;
+        uptime: number;
+        environment: string;
+        database?: string;
+      }> = await apiClient.get('/health');
+      return response.data;
+    } catch (error) {
+      // If health check fails, throw error to trigger fallback
+      throw new Error('Backend health check failed');
+    }
   },
 };
 
