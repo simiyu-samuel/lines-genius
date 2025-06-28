@@ -10,17 +10,22 @@ declare global {
 
 // Create Prisma client with optimized settings for serverless
 const createPrismaClient = () => {
+  const databaseUrl = process.env.DATABASE_URL;
+  
+  if (!databaseUrl) {
+    console.error('❌ DATABASE_URL is not defined in environment variables');
+    throw new Error('DATABASE_URL is required');
+  }
+
   return new PrismaClient({
     log: process.env.NODE_ENV === 'development' ? ['query', 'info', 'warn', 'error'] : ['error', 'warn'],
     datasources: {
       db: {
-        url: process.env.DATABASE_URL,
+        url: databaseUrl,
       },
     },
     // Serverless-specific configuration
     errorFormat: 'pretty',
-    // Add connection pool settings for serverless
-    // This helps prevent the "prepared statement already exists" error
   });
 };
 
@@ -37,13 +42,25 @@ if (process.env.NODE_ENV === 'production') {
 
 export const connectDatabase = async () => {
   try {
+    console.log('🔌 Attempting to connect to database...');
+    console.log('Database URL exists:', !!process.env.DATABASE_URL);
+    console.log('Environment:', process.env.NODE_ENV);
+    
     await prisma.$connect();
     console.log('✅ Database connected successfully');
     return true;
   } catch (error) {
     console.error('❌ Database connection failed:', error);
+    
+    // Log more details about the error
+    if (error instanceof Error) {
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+    }
+    
     // In serverless, don't throw - just return false
     if (process.env.NODE_ENV === 'production') {
+      console.log('⚠️ Continuing without database connection in production');
       return false;
     }
     throw error;

@@ -33,6 +33,14 @@ router.post('/register', validate(schemas.register), async (req, res, next) => {
   try {
     const { name, email, password } = req.body;
 
+    // Check if database is available
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+    } catch (dbError) {
+      console.error('Database connection error in register:', dbError);
+      throw new AppError('Database connection failed. Please try again later.', 503);
+    }
+
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
       throw new AppError('User already exists with this email', 400);
@@ -54,6 +62,7 @@ router.post('/register', validate(schemas.register), async (req, res, next) => {
     logger.info(`New user registered: ${email}`);
     res.status(201).json({ success: true, data: { user, token } });
   } catch (error) {
+    console.error('Registration error:', error);
     next(error);
   }
 });
@@ -62,6 +71,14 @@ router.post('/register', validate(schemas.register), async (req, res, next) => {
 router.post('/login', validate(schemas.login), async (req, res, next) => {
   try {
     const { email, password } = req.body;
+
+    // Check if database is available
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+    } catch (dbError) {
+      console.error('Database connection error in login:', dbError);
+      throw new AppError('Database connection failed. Please try again later.', 503);
+    }
 
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user || !user.isActive) {
@@ -89,6 +106,7 @@ router.post('/login', validate(schemas.login), async (req, res, next) => {
       },
     });
   } catch (error) {
+    console.error('Login error:', error);
     next(error);
   }
 });
