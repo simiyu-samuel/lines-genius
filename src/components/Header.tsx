@@ -11,7 +11,10 @@ import {
   User, 
   LogOut,
   Menu,
-  X
+  X,
+  CreditCard,
+  Users,
+  GraduationCap
 } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { useAuth } from '../context/AuthContext';
@@ -28,6 +31,9 @@ export const Header: React.FC = () => {
     { path: '/', label: 'Home', icon: Home },
     { path: '/generate', label: 'Generate', icon: Zap },
     ...(isAuthenticated ? [{ path: '/saved', label: 'Saved', icon: BookOpen }] : []),
+    { path: '/courses', label: 'Courses', icon: GraduationCap },
+    { path: '/community', label: 'Community', icon: Users },
+    { path: '/pricing', label: 'Pricing', icon: CreditCard },
     { path: '/about', label: 'About', icon: Info },
     { path: '/contact', label: 'Contact', icon: Mail },
   ];

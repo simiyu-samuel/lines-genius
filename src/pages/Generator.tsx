@@ -7,10 +7,15 @@ import {
   Sparkles, 
   Settings,
   RefreshCw,
-  CheckCircle
+  CheckCircle,
+  Crown,
+  Lock
 } from 'lucide-react';
 import { generateLines } from '../utils/mockAI';
 import { useSavedLines } from '../context/SavedLinesContext';
+import { useSubscription } from '../context/SubscriptionContext';
+import { UsageIndicator } from '../components/UsageIndicator';
+import { Link } from 'react-router-dom';
 
 const categories = [
   { value: 'taglines', label: 'Business Taglines' },
@@ -41,9 +46,16 @@ export const Generator: React.FC = () => {
   const [savedIndex, setSavedIndex] = useState<number | null>(null);
   
   const { saveLine } = useSavedLines();
+  const { 
+    currentPlan, 
+    canGenerate, 
+    upgradeRequired, 
+    incrementUsage, 
+    hasFeature 
+  } = useSubscription();
 
   const handleGenerate = async () => {
-    if (isGenerating) return;
+    if (isGenerating || !canGenerate) return;
     
     setIsGenerating(true);
     setGeneratedLines([]);
@@ -51,6 +63,7 @@ export const Generator: React.FC = () => {
     try {
       const lines = await generateLines({ category, tone, prompt });
       setGeneratedLines(lines);
+      incrementUsage();
     } catch (error) {
       console.error('Error generating lines:', error);
       setGeneratedLines(['Sorry, something went wrong. Please try again.']);
@@ -77,6 +90,19 @@ export const Generator: React.FC = () => {
     });
     setSavedIndex(index);
     setTimeout(() => setSavedIndex(null), 2000);
+  };
+
+  const isFeatureRestricted = (feature: string) => {
+    switch (feature) {
+      case 'customPrompts':
+        return !hasFeature('customPrompts');
+      case 'advancedTones':
+        return !currentPlan.limits.tones.includes(tone);
+      case 'advancedCategories':
+        return !currentPlan.limits.categories.includes(category);
+      default:
+        return false;
+    }
   };
 
   return (
@@ -109,6 +135,11 @@ export const Generator: React.FC = () => {
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Configuration</h2>
             </div>
 
+            {/* Usage Indicator */}
+            <div className="mb-6">
+              <UsageIndicator />
+            </div>
+
             <div className="space-y-6">
               {/* Category Selection */}
               <div>
@@ -119,14 +150,22 @@ export const Generator: React.FC = () => {
                   <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
-                    className="w-full px-4 py-3 rounded-lg bg-white/50 dark:bg-dark-700/50 border border-gray-300 dark:border-neon-purple/30 focus:ring-2 focus:ring-neon-purple focus:border-transparent transition-all duration-200 text-gray-900 dark:text-white backdrop-blur-sm"
+                    disabled={isFeatureRestricted('advancedCategories')}
+                    className="w-full px-4 py-3 rounded-lg bg-white/50 dark:bg-dark-700/50 border border-gray-300 dark:border-neon-purple/30 focus:ring-2 focus:ring-neon-purple focus:border-transparent transition-all duration-200 text-gray-900 dark:text-white backdrop-blur-sm disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {categories.map((cat) => (
-                      <option key={cat.value} value={cat.value}>
-                        {cat.label}
+                      <option 
+                        key={cat.value} 
+                        value={cat.value}
+                        disabled={!currentPlan.limits.categories.includes(cat.value)}
+                      >
+                        {cat.label} {!currentPlan.limits.categories.includes(cat.value) ? '(Pro)' : ''}
                       </option>
                     ))}
                   </select>
+                  {isFeatureRestricted('advancedCategories') && (
+                    <Lock className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  )}
                 </div>
               </div>
 
@@ -136,56 +175,84 @@ export const Generator: React.FC = () => {
                   Tone
                 </label>
                 <div className="grid grid-cols-2 gap-2">
-                  {tones.map((toneOption) => (
-                    <button
-                      key={toneOption.value}
-                      onClick={() => setTone(toneOption.value)}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                        tone === toneOption.value
-                          ? 'bg-gradient-to-r from-neon-purple to-neon-cyan text-white shadow-lg'
-                          : 'bg-white/50 dark:bg-dark-700/50 text-gray-700 dark:text-gray-300 hover:bg-white/70 dark:hover:bg-dark-600/50 border border-gray-200 dark:border-neon-purple/20'
-                      }`}
-                    >
-                      {toneOption.label}
-                    </button>
-                  ))}
+                  {tones.map((toneOption) => {
+                    const isRestricted = !currentPlan.limits.tones.includes(toneOption.value);
+                    return (
+                      <button
+                        key={toneOption.value}
+                        onClick={() => !isRestricted && setTone(toneOption.value)}
+                        disabled={isRestricted}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 relative ${
+                          tone === toneOption.value
+                            ? 'bg-gradient-to-r from-neon-purple to-neon-cyan text-white shadow-lg'
+                            : isRestricted
+                            ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed'
+                            : 'bg-white/50 dark:bg-dark-700/50 text-gray-700 dark:text-gray-300 hover:bg-white/70 dark:hover:bg-dark-600/50 border border-gray-200 dark:border-neon-purple/20'
+                        }`}
+                      >
+                        {toneOption.label}
+                        {isRestricted && (
+                          <Crown className="absolute top-1 right-1 h-3 w-3 text-neon-purple" />
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
               {/* Custom Prompt */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Custom Prompt (Optional)
+                  Custom Prompt {!hasFeature('customPrompts') && '(Pro Feature)'}
                 </label>
-                <textarea
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  placeholder="Add any specific requirements, product details, or keywords..."
-                  rows={4}
-                  className="w-full px-4 py-3 rounded-lg bg-white/50 dark:bg-dark-700/50 border border-gray-300 dark:border-neon-purple/30 focus:ring-2 focus:ring-neon-purple focus:border-transparent transition-all duration-200 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 backdrop-blur-sm resize-none"
-                />
+                <div className="relative">
+                  <textarea
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    placeholder={hasFeature('customPrompts') 
+                      ? "Add any specific requirements, product details, or keywords..."
+                      : "Upgrade to Pro to use custom prompts..."
+                    }
+                    rows={4}
+                    disabled={!hasFeature('customPrompts')}
+                    className="w-full px-4 py-3 rounded-lg bg-white/50 dark:bg-dark-700/50 border border-gray-300 dark:border-neon-purple/30 focus:ring-2 focus:ring-neon-purple focus:border-transparent transition-all duration-200 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 backdrop-blur-sm resize-none disabled:opacity-50 disabled:cursor-not-allowed"
+                  />
+                  {!hasFeature('customPrompts') && (
+                    <Lock className="absolute top-3 right-3 h-5 w-5 text-gray-400" />
+                  )}
+                </div>
               </div>
 
               {/* Generate Button */}
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={handleGenerate}
-                disabled={isGenerating}
-                className="w-full bg-gradient-to-r from-neon-purple to-neon-cyan text-white px-6 py-4 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:shadow-neon-purple/25 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-              >
-                {isGenerating ? (
-                  <>
-                    <RefreshCw className="h-5 w-5 animate-spin" />
-                    <span>Generating...</span>
-                  </>
-                ) : (
-                  <>
-                    <Zap className="h-5 w-5" />
-                    <span>Generate Lines</span>
-                  </>
-                )}
-              </motion.button>
+              {upgradeRequired ? (
+                <Link
+                  to="/pricing"
+                  className="w-full bg-gradient-to-r from-neon-purple to-neon-cyan text-white px-6 py-4 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:shadow-neon-purple/25 flex items-center justify-center space-x-2"
+                >
+                  <Crown className="h-5 w-5" />
+                  <span>Upgrade to Continue</span>
+                </Link>
+              ) : (
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={handleGenerate}
+                  disabled={isGenerating || !canGenerate}
+                  className="w-full bg-gradient-to-r from-neon-purple to-neon-cyan text-white px-6 py-4 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:shadow-neon-purple/25 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                >
+                  {isGenerating ? (
+                    <>
+                      <RefreshCw className="h-5 w-5 animate-spin" />
+                      <span>Generating...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="h-5 w-5" />
+                      <span>Generate Lines</span>
+                    </>
+                  )}
+                </motion.button>
+              )}
             </div>
           </motion.div>
 
