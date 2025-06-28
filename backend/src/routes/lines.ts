@@ -3,11 +3,34 @@ import prisma from '../config/database';
 import { authenticate, optionalAuth } from '../middleware/auth';
 import { validate, schemas } from '../middleware/validation';
 import { generateLines, testOpenAIConnection } from '../services/openaiService';
+import { generateLinesWithHuggingFace, testHuggingFaceConnection } from '../services/huggingFaceService';
 import { checkUsageLimit, incrementUsage } from '../services/usageService';
 import { AppError } from '../utils/AppError';
 import logger from '../utils/logger';
 
 const router = express.Router();
+
+// Test AI services connection (for debugging)
+router.get('/test-ai', async (req, res, next) => {
+  try {
+    const openaiConnected = await testOpenAIConnection();
+    const huggingFaceConnected = await testHuggingFaceConnection();
+    
+    res.json({
+      success: true,
+      data: {
+        openai_connected: openaiConnected,
+        huggingface_connected: huggingFaceConnected,
+        openai_api_key_configured: !!process.env.OPENAI_API_KEY,
+        openai_api_key_format: process.env.OPENAI_API_KEY ? 
+          (process.env.OPENAI_API_KEY.startsWith('sk-') ? 'valid' : 'invalid') : 'missing',
+        recommended_service: openaiConnected ? 'openai' : 'huggingface'
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
 
 // Generate lines
 router.post('/generate', optionalAuth, validate(schemas.generateLines), async (req, res, next) => {
@@ -23,13 +46,41 @@ router.post('/generate', optionalAuth, validate(schemas.generateLines), async (r
       }
     }
 
-    // Generate lines using OpenAI
-    const result = await generateLines({
-      category,
-      tone,
-      prompt,
-      count,
-    });
+    let result;
+    let serviceUsed = 'unknown';
+
+    // Try OpenAI first if available
+    if (process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY.startsWith('sk-')) {
+      try {
+        result = await generateLines({
+          category,
+          tone,
+          prompt,
+          count,
+        });
+        serviceUsed = 'openai';
+        logger.info(`Used OpenAI for line generation: ${category}/${tone}`);
+      } catch (openaiError) {
+        logger.warn('OpenAI failed, falling back to Hugging Face:', openaiError);
+        // Fall back to Hugging Face
+        result = await generateLinesWithHuggingFace({
+          category,
+          tone,
+          prompt,
+          count,
+        });
+        serviceUsed = 'huggingface';
+      }
+    } else {
+      // Use Hugging Face fallback
+      result = await generateLinesWithHuggingFace({
+        category,
+        tone,
+        prompt,
+        count,
+      });
+      serviceUsed = 'huggingface';
+    }
 
     // Log the generation
     await prisma.generationLog.create({
@@ -39,7 +90,7 @@ router.post('/generate', optionalAuth, validate(schemas.generateLines), async (r
         tone,
         prompt,
         response: result.lines,
-        tokens: result.usage?.total_tokens,
+        tokens: result.usage?.total_tokens || 0,
         success: true,
         ipAddress: req.ip,
         userAgent: req.get('User-Agent'),
@@ -51,7 +102,7 @@ router.post('/generate', optionalAuth, validate(schemas.generateLines), async (r
       await incrementUsage(userId);
     }
 
-    logger.info(`Lines generated for ${userId ? 'user ' + userId : 'anonymous'}: ${category}/${tone}`);
+    logger.info(`Lines generated for ${userId ? 'user ' + userId : 'anonymous'}: ${category}/${tone} using ${serviceUsed}`);
 
     res.json({
       success: true,
@@ -60,6 +111,7 @@ router.post('/generate', optionalAuth, validate(schemas.generateLines), async (r
         usage: result.usage,
         category,
         tone,
+        service_used: serviceUsed,
       },
     });
   } catch (error) {
