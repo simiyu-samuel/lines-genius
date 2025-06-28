@@ -57,6 +57,7 @@ const corsOptions = {
       'http://localhost:5173',
       'http://localhost:3000',
       'https://lines-genius.vercel.app',
+      'https://lines-genius.vercel.app/api',
       'https://linesgenius.com',
       'https://www.linesgenius.com'
     ].filter(Boolean);
