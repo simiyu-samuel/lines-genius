@@ -14,7 +14,8 @@
     "generate": "npx prisma generate",
     "studio": "npx prisma studio",
     "postinstall": "npx prisma generate",
-    "vercel-build": "rm -rf dist && npx prisma generate && tsc"
+    "vercel-build": "rm -rf dist && npx prisma generate && tsc",
+    "type-check": "tsc --noEmit"
   },
   "keywords": [
     "api",
