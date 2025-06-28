@@ -27,6 +27,17 @@ console.log('Database URL exists:', !!process.env.DATABASE_URL);
 // Load environment variables
 dotenv.config();
 
+// Validate required environment variables
+const requiredEnvVars = ['DATABASE_URL', 'JWT_SECRET'];
+const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
+
+if (missingEnvVars.length > 0) {
+  console.error('❌ Missing required environment variables:', missingEnvVars);
+  if (process.env.NODE_ENV === 'production') {
+    process.exit(1);
+  }
+}
+
 const app = express();
 
 // Trust proxy for Vercel and other platforms
@@ -34,52 +45,35 @@ app.set('trust proxy', 1);
 
 // --- 1. CORS CONFIGURATION ---
 // This MUST be the first middleware to run to handle preflight requests correctly.
-// const corsOptions = {
-//   origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
-//     const allowedOrigins = [
-//       process.env.CORS_ORIGIN,
-//       'http://localhost:5173',
-//       'http://localhost:3000',
-//       'https://lines-genius.vercel.app',
-//       'https://linesgenius.com',
-//       'https://www.linesgenius.com'
-//     ].filter(Boolean);
-
-//     // Allow requests with no origin (like mobile apps or curl requests)
-//     if (!origin) return callback(null, true);
-    
-//     if (allowedOrigins.includes(origin)) {
-//       callback(null, true);
-//     } else {
-//       callback(new Error('Not allowed by CORS'));
-//     }
-//   },
-//   credentials: true,
-//   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-//   allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key'],
-// };
-// Temporarily replace your corsOptions with this:
 const corsOptions = {
-  origin: [
-    'https://lines-genius.vercel.app',
-    'http://localhost:5173',
-    'http://localhost:3000'
-  ],
+  origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
+    const allowedOrigins = [
+      process.env.CORS_ORIGIN,
+      'http://localhost:5173',
+      'http://localhost:3000',
+      'https://lines-genius.vercel.app',
+      'https://linesgenius.com',
+      'https://www.linesgenius.com'
+    ].filter(Boolean);
+
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key'],
+  optionsSuccessStatus: 204
 };
 
 // Apply CORS middleware. It will automatically handle OPTIONS requests.
 app.use(cors(corsOptions));
 
-// Add this debug middleware right after CORS
-app.use((req, res, next) => {
-  console.log('Request origin:', req.headers.origin);
-  console.log('Request method:', req.method);
-  console.log('Request path:', req.path);
-  next();
-});
 // --- 2. SECURITY & RATE LIMITING MIDDLEWARE ---
 
 // Rate limiting

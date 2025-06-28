@@ -16,6 +16,15 @@ export const errorHandler = (
     ip: req.ip,
   });
 
+  // Handle CORS errors
+  if (error.message === 'Not allowed by CORS') {
+    return res.status(403).json({
+      success: false,
+      error: 'CORS policy violation',
+      message: 'Origin not allowed',
+    });
+  }
+
   if (error instanceof AppError) {
     // REMOVED 'return'
     res.status(error.statusCode).json({

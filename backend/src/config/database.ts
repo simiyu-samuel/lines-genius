@@ -37,8 +37,13 @@ export const connectDatabase = async () => {
   try {
     await prisma.$connect();
     console.log('✅ Database connected successfully');
+    return true;
   } catch (error) {
     console.error('❌ Database connection failed:', error);
+    // In serverless, don't throw - just return false
+    if (process.env.NODE_ENV === 'production') {
+      return false;
+    }
     throw error;
   }
 };
@@ -51,5 +56,16 @@ export const disconnectDatabase = async () => {
     console.error('❌ Database disconnection failed:', error);
   }
 };
+
+// Graceful shutdown handler
+process.on('SIGINT', async () => {
+  await disconnectDatabase();
+  process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+  await disconnectDatabase();
+  process.exit(0);
+});
 
 export default prisma;
