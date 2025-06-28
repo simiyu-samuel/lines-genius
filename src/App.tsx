@@ -16,6 +16,7 @@ import { Auth } from './pages/Auth';
 import { Pricing } from './pages/Pricing';
 import { Community } from './pages/Community';
 import { Courses } from './pages/Courses';
+import { ApiDocs } from './pages/ApiDocs';
 
 function App() {
   useEffect(() => {
@@ -42,6 +43,7 @@ function App() {
                     <Route path="/pricing" element={<Pricing />} />
                     <Route path="/community" element={<Community />} />
                     <Route path="/courses" element={<Courses />} />
+                    <Route path="/api-docs" element={<ApiDocs />} />
                   </Routes>
                 </main>
                 <Footer />

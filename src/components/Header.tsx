@@ -14,7 +14,8 @@ import {
   X,
   CreditCard,
   Users,
-  GraduationCap
+  GraduationCap,
+  Code
 } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { useAuth } from '../context/AuthContext';
@@ -34,6 +35,7 @@ export const Header: React.FC = () => {
     { path: '/courses', label: 'Courses', icon: GraduationCap },
     { path: '/community', label: 'Community', icon: Users },
     { path: '/pricing', label: 'Pricing', icon: CreditCard },
+    { path: '/api-docs', label: 'API', icon: Code },
     { path: '/about', label: 'About', icon: Info },
     { path: '/contact', label: 'Contact', icon: Mail },
   ];
