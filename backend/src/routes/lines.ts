@@ -38,18 +38,31 @@ router.post('/generate', optionalAuth, validate(schemas.generateLines), async (r
     const { category, tone = 'corporate', prompt, count = 4 } = req.body;
     const userId = req.user?.id;
 
+    console.log(`🎯 Line generation request:`, {
+      userId: userId || 'anonymous',
+      category,
+      tone,
+      count,
+      hasPrompt: !!prompt
+    });
+
     // Check usage limits for authenticated users
     if (userId) {
-      const canGenerate = await checkUsageLimit(userId);
-      if (!canGenerate) {
-        throw new AppError('Daily generation limit reached. Please upgrade your plan.', 429);
+      try {
+        const canGenerate = await checkUsageLimit(userId);
+        if (!canGenerate) {
+          throw new AppError('Daily generation limit reached. Please upgrade your plan.', 429);
+        }
+        console.log(`✅ Usage limit check passed for user: ${userId}`);
+      } catch (error) {
+        console.error('❌ Usage limit check failed:', error);
+        // Continue without usage tracking if it fails
       }
     }
 
-    // Create default prompt if none provided or if user doesn't have custom prompts feature
+    // Create default prompt if none provided
     let finalPrompt = prompt;
     if (!finalPrompt || finalPrompt.trim() === '') {
-      // Generate a contextual default prompt based on category and tone
       const defaultPrompts = {
         taglines: {
           corporate: 'Create professional business taglines that convey trust and reliability',
@@ -94,6 +107,7 @@ router.post('/generate', optionalAuth, validate(schemas.generateLines), async (r
     // Try OpenAI first if available
     if (process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY.startsWith('sk-')) {
       try {
+        console.log('🤖 Attempting OpenAI generation...');
         result = await generateLines({
           category,
           tone,
@@ -101,10 +115,37 @@ router.post('/generate', optionalAuth, validate(schemas.generateLines), async (r
           count,
         });
         serviceUsed = 'openai';
-        logger.info(`Used OpenAI for line generation: ${category}/${tone}`);
+        console.log(`✅ OpenAI generation successful: ${result.lines.length} lines`);
       } catch (openaiError) {
-        logger.warn('OpenAI failed, falling back to Hugging Face:', openaiError);
-        // Fall back to Hugging Face
+        console.warn('⚠️ OpenAI failed, falling back to Hugging Face:', openaiError);
+        try {
+          result = await generateLinesWithHuggingFace({
+            category,
+            tone,
+            prompt: finalPrompt,
+            count,
+          });
+          serviceUsed = 'huggingface';
+          console.log(`✅ Hugging Face fallback successful: ${result.lines.length} lines`);
+        } catch (hfError) {
+          console.warn('⚠️ Hugging Face also failed, using fallback lines:', hfError);
+          // Use simple fallback
+          result = {
+            lines: [
+              `Professional ${category} for your business`,
+              `Quality ${category} that delivers results`,
+              `Innovative ${category} solutions`,
+              `Excellence in ${category} creation`
+            ].slice(0, count),
+            usage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 }
+          };
+          serviceUsed = 'fallback';
+        }
+      }
+    } else {
+      // Use Hugging Face or fallback
+      try {
+        console.log('🤖 Attempting Hugging Face generation...');
         result = await generateLinesWithHuggingFace({
           category,
           tone,
@@ -112,39 +153,55 @@ router.post('/generate', optionalAuth, validate(schemas.generateLines), async (r
           count,
         });
         serviceUsed = 'huggingface';
+        console.log(`✅ Hugging Face generation successful: ${result.lines.length} lines`);
+      } catch (hfError) {
+        console.warn('⚠️ Hugging Face failed, using fallback lines:', hfError);
+        result = {
+          lines: [
+            `Professional ${category} for your business`,
+            `Quality ${category} that delivers results`,
+            `Innovative ${category} solutions`,
+            `Excellence in ${category} creation`
+          ].slice(0, count),
+          usage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 }
+        };
+        serviceUsed = 'fallback';
       }
-    } else {
-      // Use Hugging Face fallback
-      result = await generateLinesWithHuggingFace({
-        category,
-        tone,
-        prompt: finalPrompt,
-        count,
-      });
-      serviceUsed = 'huggingface';
     }
 
-    // Log the generation
-    await prisma.generationLog.create({
-      data: {
-        userId,
-        category,
-        tone,
-        prompt: finalPrompt,
-        response: result.lines,
-        tokens: result.usage?.total_tokens || 0,
-        success: true,
-        ipAddress: req.ip,
-        userAgent: req.get('User-Agent'),
-      },
-    });
+    // Log the generation attempt
+    try {
+      await prisma.generationLog.create({
+        data: {
+          userId,
+          category,
+          tone,
+          prompt: finalPrompt,
+          response: result.lines,
+          tokens: result.usage?.total_tokens || 0,
+          success: true,
+          ipAddress: req.ip,
+          userAgent: req.get('User-Agent'),
+        },
+      });
+      console.log(`📊 Generation logged successfully for ${userId || 'anonymous'}`);
+    } catch (logError) {
+      console.error('❌ Failed to log generation:', logError);
+      // Continue without logging if it fails
+    }
 
     // Increment usage for authenticated users
     if (userId) {
-      await incrementUsage(userId);
+      try {
+        await incrementUsage(userId);
+        console.log(`📈 Usage incremented for user: ${userId}`);
+      } catch (usageError) {
+        console.error('❌ Failed to increment usage:', usageError);
+        // Continue without usage tracking if it fails
+      }
     }
 
-    logger.info(`Lines generated for ${userId ? 'user ' + userId : 'anonymous'}: ${category}/${tone} using ${serviceUsed}`);
+    console.log(`🎉 Generation completed successfully using ${serviceUsed}`);
 
     res.json({
       success: true,
@@ -157,21 +214,27 @@ router.post('/generate', optionalAuth, validate(schemas.generateLines), async (r
       },
     });
   } catch (error) {
-    // Log failed generation
-    if (req.user?.id) {
-      await prisma.generationLog.create({
-        data: {
-          userId: req.user.id,
-          category: req.body.category,
-          tone: req.body.tone || 'corporate',
-          prompt: req.body.prompt,
-          response: [],
-          success: false,
-          error: error instanceof Error ? error.message : 'Unknown error',
-          ipAddress: req.ip,
-          userAgent: req.get('User-Agent'),
-        },
-      });
+    console.error('❌ Generation failed:', error);
+    
+    // Log failed generation attempt
+    try {
+      if (req.user?.id) {
+        await prisma.generationLog.create({
+          data: {
+            userId: req.user.id,
+            category: req.body.category,
+            tone: req.body.tone || 'corporate',
+            prompt: req.body.prompt,
+            response: [],
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error',
+            ipAddress: req.ip,
+            userAgent: req.get('User-Agent'),
+          },
+        });
+      }
+    } catch (logError) {
+      console.error('❌ Failed to log failed generation:', logError);
     }
 
     next(error);
@@ -184,6 +247,8 @@ router.post('/save', authenticate, validate(schemas.saveLine), async (req, res, 
     const { text, category, tone, tags = [] } = req.body;
     const userId = req.user!.id;
 
+    console.log(`💾 Saving line for user: ${userId}`);
+
     const savedLine = await prisma.savedLine.create({
       data: {
         text,
@@ -194,13 +259,14 @@ router.post('/save', authenticate, validate(schemas.saveLine), async (req, res, 
       },
     });
 
-    logger.info(`Line saved by user ${userId}: ${savedLine.id}`);
+    console.log(`✅ Line saved successfully: ${savedLine.id}`);
 
     res.status(201).json({
       success: true,
       data: { savedLine },
     });
   } catch (error) {
+    console.error('❌ Failed to save line:', error);
     next(error);
   }
 });
@@ -210,6 +276,8 @@ router.get('/saved', authenticate, async (req, res, next) => {
   try {
     const userId = req.user!.id;
     const { category, search, page = 1, limit = 20 } = req.query;
+
+    console.log(`📚 Fetching saved lines for user: ${userId}`);
 
     const where: any = { userId };
 
@@ -236,6 +304,8 @@ router.get('/saved', authenticate, async (req, res, next) => {
       prisma.savedLine.count({ where }),
     ]);
 
+    console.log(`✅ Found ${savedLines.length} saved lines for user: ${userId}`);
+
     res.json({
       success: true,
       data: {
@@ -249,6 +319,7 @@ router.get('/saved', authenticate, async (req, res, next) => {
       },
     });
   } catch (error) {
+    console.error('❌ Failed to fetch saved lines:', error);
     next(error);
   }
 });
@@ -258,6 +329,8 @@ router.delete('/saved/:id', authenticate, async (req, res, next) => {
   try {
     const { id } = req.params;
     const userId = req.user!.id;
+
+    console.log(`🗑️ Deleting line ${id} for user: ${userId}`);
 
     const savedLine = await prisma.savedLine.findFirst({
       where: { id, userId },
@@ -271,13 +344,14 @@ router.delete('/saved/:id', authenticate, async (req, res, next) => {
       where: { id },
     });
 
-    logger.info(`Line deleted by user ${userId}: ${id}`);
+    console.log(`✅ Line deleted successfully: ${id}`);
 
     res.json({
       success: true,
       message: 'Saved line deleted successfully',
     });
   } catch (error) {
+    console.error('❌ Failed to delete line:', error);
     next(error);
   }
 });
@@ -287,37 +361,58 @@ router.delete('/saved', authenticate, async (req, res, next) => {
   try {
     const userId = req.user!.id;
 
+    console.log(`🗑️ Clearing all lines for user: ${userId}`);
+
     const result = await prisma.savedLine.deleteMany({
       where: { userId },
     });
 
-    logger.info(`All lines cleared by user ${userId}: ${result.count} lines deleted`);
+    console.log(`✅ Cleared ${result.count} lines for user: ${userId}`);
 
     res.json({
       success: true,
       message: `${result.count} saved lines deleted successfully`,
     });
   } catch (error) {
+    console.error('❌ Failed to clear lines:', error);
     next(error);
   }
 });
 
-// Test OpenAI connection (for debugging)
-router.get('/test-openai', async (req, res, next) => {
+// Test database connection
+router.get('/test-db', async (req, res, next) => {
   try {
-    const isConnected = await testOpenAIConnection();
+    console.log('🧪 Testing database connection...');
+    
+    // Test basic connection
+    await prisma.$queryRaw`SELECT 1 as test`;
+    
+    // Test table access
+    const userCount = await prisma.user.count();
+    const lineCount = await prisma.savedLine.count();
+    const logCount = await prisma.generationLog.count();
+    
+    console.log('✅ Database test successful');
     
     res.json({
       success: true,
       data: {
-        openai_connected: isConnected,
-        api_key_configured: !!process.env.OPENAI_API_KEY,
-        api_key_format: process.env.OPENAI_API_KEY ? 
-          (process.env.OPENAI_API_KEY.startsWith('sk-') ? 'valid' : 'invalid') : 'missing'
+        connection: 'healthy',
+        tables: {
+          users: userCount,
+          savedLines: lineCount,
+          generationLogs: logCount
+        },
+        timestamp: new Date().toISOString()
       }
     });
   } catch (error) {
-    next(error);
+    console.error('❌ Database test failed:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Database connection failed',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
 });
 
