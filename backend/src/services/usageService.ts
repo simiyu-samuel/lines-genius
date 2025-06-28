@@ -1,4 +1,4 @@
-import { getFreshPrismaClient } from '../config/database';
+import prisma from '../config/database';
 import { AppError } from '../utils/AppError';
 
 // Subscription plans with limits
@@ -18,12 +18,8 @@ const PLAN_LIMITS = {
 };
 
 export const checkUsageLimit = async (userId: string): Promise<boolean> => {
-  let prisma: any = null;
-  
   try {
     console.log(`📊 Checking usage limit for user: ${userId}`);
-    
-    prisma = getFreshPrismaClient();
     
     // Get user's current subscription
     const subscription = await prisma.subscription.findFirst({
@@ -68,24 +64,12 @@ export const checkUsageLimit = async (userId: string): Promise<boolean> => {
     console.error('❌ Failed to check usage limit:', error);
     // If usage check fails, allow generation (fail open)
     return true;
-  } finally {
-    if (process.env.VERCEL && prisma) {
-      try {
-        await prisma.$disconnect();
-      } catch (disconnectError) {
-        console.error('❌ Failed to disconnect Prisma client:', disconnectError);
-      }
-    }
   }
 };
 
 export const incrementUsage = async (userId: string): Promise<void> => {
-  let prisma: any = null;
-  
   try {
     console.log(`📈 Incrementing usage for user: ${userId}`);
-    
-    prisma = getFreshPrismaClient();
     
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -126,24 +110,12 @@ export const incrementUsage = async (userId: string): Promise<void> => {
   } catch (error) {
     console.error('❌ Failed to increment usage:', error);
     // Don't throw error, just log it
-  } finally {
-    if (process.env.VERCEL && prisma) {
-      try {
-        await prisma.$disconnect();
-      } catch (disconnectError) {
-        console.error('❌ Failed to disconnect Prisma client:', disconnectError);
-      }
-    }
   }
 };
 
 export const getUserUsageStats = async (userId: string) => {
-  let prisma: any = null;
-  
   try {
     console.log(`📊 Getting usage stats for user: ${userId}`);
-    
-    prisma = getFreshPrismaClient();
     
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -190,23 +162,11 @@ export const getUserUsageStats = async (userId: string) => {
       limits: PLAN_LIMITS.free,
       planId: 'free',
     };
-  } finally {
-    if (process.env.VERCEL && prisma) {
-      try {
-        await prisma.$disconnect();
-      } catch (disconnectError) {
-        console.error('❌ Failed to disconnect Prisma client:', disconnectError);
-      }
-    }
   }
 };
 
 export const resetDailyUsage = async (): Promise<void> => {
-  let prisma: any = null;
-  
   try {
-    prisma = getFreshPrismaClient();
-    
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
     yesterday.setHours(23, 59, 59, 999);
@@ -228,13 +188,5 @@ export const resetDailyUsage = async (): Promise<void> => {
   } catch (error) {
     console.error('❌ Failed to reset daily usage:', error);
     throw new AppError('Failed to reset daily usage', 500);
-  } finally {
-    if (process.env.VERCEL && prisma) {
-      try {
-        await prisma.$disconnect();
-      } catch (disconnectError) {
-        console.error('❌ Failed to disconnect Prisma client:', disconnectError);
-      }
-    }
   }
 };

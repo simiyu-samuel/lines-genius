@@ -1,5 +1,5 @@
 import express from 'express';
-import { getFreshPrismaClient } from '../config/database';
+import prisma from '../config/database';
 import { authenticate, optionalAuth } from '../middleware/auth';
 import { validate, schemas } from '../middleware/validation';
 import { generateLines, testOpenAIConnection } from '../services/openaiService';
@@ -9,9 +9,6 @@ import { AppError } from '../utils/AppError';
 import logger from '../utils/logger';
 
 const router = express.Router();
-
-// Get Prisma client (fresh for serverless, global for development)
-const getPrismaClient = () => getFreshPrismaClient();
 
 // Test AI services connection (for debugging)
 router.get('/test-ai', async (req, res, next) => {
@@ -37,8 +34,6 @@ router.get('/test-ai', async (req, res, next) => {
 
 // Generate lines
 router.post('/generate', optionalAuth, validate(schemas.generateLines), async (req, res, next) => {
-  let prisma: any = null;
-  
   try {
     const { category, tone = 'corporate', prompt, count = 4 } = req.body;
     const userId = req.user?.id;
@@ -50,9 +45,6 @@ router.post('/generate', optionalAuth, validate(schemas.generateLines), async (r
       count,
       hasPrompt: !!prompt
     });
-
-    // Get fresh Prisma client for this request
-    prisma = getPrismaClient();
 
     // Check usage limits for authenticated users
     if (userId) {
@@ -209,66 +201,28 @@ router.post('/generate', optionalAuth, validate(schemas.generateLines), async (r
       }
     }
 
-    console.log(`🎉 Generation completed successfully using ${serviceUsed}`);
-
     res.json({
       success: true,
       data: {
         lines: result.lines,
+        service: serviceUsed,
         usage: result.usage,
-        category,
-        tone,
-        service_used: serviceUsed,
+        timestamp: new Date().toISOString(),
       },
     });
   } catch (error) {
-    console.error('❌ Generation failed:', error);
-    
-    // Log failed generation attempt
-    try {
-      if (req.user?.id && prisma) {
-        await prisma.generationLog.create({
-          data: {
-            userId: req.user.id,
-            category: req.body.category,
-            tone: req.body.tone || 'corporate',
-            prompt: req.body.prompt,
-            response: [],
-            success: false,
-            error: error instanceof Error ? error.message : 'Unknown error',
-            ipAddress: req.ip,
-            userAgent: req.get('User-Agent'),
-          },
-        });
-      }
-    } catch (logError) {
-      console.error('❌ Failed to log failed generation:', logError);
-    }
-
+    console.error('❌ Line generation failed:', error);
     next(error);
-  } finally {
-    // Disconnect Prisma client in serverless environment
-    if (process.env.VERCEL && prisma) {
-      try {
-        await prisma.$disconnect();
-      } catch (disconnectError) {
-        console.error('❌ Failed to disconnect Prisma client:', disconnectError);
-      }
-    }
   }
 });
 
 // Save a line
 router.post('/save', authenticate, validate(schemas.saveLine), async (req, res, next) => {
-  let prisma: any = null;
-  
   try {
     const { text, category, tone, tags = [] } = req.body;
     const userId = req.user!.id;
 
     console.log(`💾 Saving line for user: ${userId}`);
-
-    prisma = getPrismaClient();
 
     const savedLine = await prisma.savedLine.create({
       data: {
@@ -289,169 +243,106 @@ router.post('/save', authenticate, validate(schemas.saveLine), async (req, res, 
   } catch (error) {
     console.error('❌ Failed to save line:', error);
     next(error);
-  } finally {
-    if (process.env.VERCEL && prisma) {
-      try {
-        await prisma.$disconnect();
-      } catch (disconnectError) {
-        console.error('❌ Failed to disconnect Prisma client:', disconnectError);
-      }
-    }
   }
 });
 
 // Get saved lines
 router.get('/saved', authenticate, async (req, res, next) => {
-  let prisma: any = null;
-  
-  try {
-    const userId = req.user!.id;
-    const { category, search, page = 1, limit = 20 } = req.query;
+  const userId = req.user!.id;
+  const { category, search, page = 1, limit = 20 } = req.query;
 
-    console.log(`📚 Fetching saved lines for user: ${userId}`);
+  console.log(`📚 Fetching saved lines for user: ${userId}`);
 
-    prisma = getPrismaClient();
+  const where: any = { userId };
 
-    const where: any = { userId };
-
-    if (category && category !== 'all') {
-      where.category = category;
-    }
-
-    if (search) {
-      where.text = {
-        contains: search as string,
-        mode: 'insensitive',
-      };
-    }
-
-    const skip = (Number(page) - 1) * Number(limit);
-
-    const [savedLines, total] = await Promise.all([
-      prisma.savedLine.findMany({
-        where,
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: Number(limit),
-      }),
-      prisma.savedLine.count({ where }),
-    ]);
-
-    console.log(`✅ Found ${savedLines.length} saved lines for user: ${userId}`);
-
-    res.json({
-      success: true,
-      data: {
-        savedLines,
-        pagination: {
-          page: Number(page),
-          limit: Number(limit),
-          total,
-          pages: Math.ceil(total / Number(limit)),
-        },
-      },
-    });
-  } catch (error) {
-    console.error('❌ Failed to fetch saved lines:', error);
-    next(error);
-  } finally {
-    if (process.env.VERCEL && prisma) {
-      try {
-        await prisma.$disconnect();
-      } catch (disconnectError) {
-        console.error('❌ Failed to disconnect Prisma client:', disconnectError);
-      }
-    }
+  if (category && category !== 'all') {
+    where.category = category;
   }
+
+  if (search) {
+    where.text = {
+      contains: search as string,
+      mode: 'insensitive',
+    };
+  }
+
+  const skip = (Number(page) - 1) * Number(limit);
+
+  const [savedLines, total] = await Promise.all([
+    prisma.savedLine.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: Number(limit),
+    }),
+    prisma.savedLine.count({ where }),
+  ]);
+
+  console.log(`✅ Found ${savedLines.length} saved lines for user: ${userId}`);
+
+  res.json({
+    success: true,
+    data: {
+      savedLines,
+      pagination: {
+        page: Number(page),
+        limit: Number(limit),
+        total,
+        pages: Math.ceil(total / Number(limit)),
+      },
+    },
+  });
 });
 
 // Delete saved line
 router.delete('/saved/:id', authenticate, async (req, res, next) => {
-  let prisma: any = null;
-  
-  try {
-    const { id } = req.params;
-    const userId = req.user!.id;
+  const { id } = req.params;
+  const userId = req.user!.id;
 
-    console.log(`🗑️ Deleting line ${id} for user: ${userId}`);
+  console.log(`🗑️ Deleting line ${id} for user: ${userId}`);
 
-    prisma = getPrismaClient();
+  const savedLine = await prisma.savedLine.findFirst({
+    where: { id, userId },
+  });
 
-    const savedLine = await prisma.savedLine.findFirst({
-      where: { id, userId },
-    });
-
-    if (!savedLine) {
-      throw new AppError('Saved line not found', 404);
-    }
-
-    await prisma.savedLine.delete({
-      where: { id },
-    });
-
-    console.log(`✅ Line deleted successfully: ${id}`);
-
-    res.json({
-      success: true,
-      message: 'Saved line deleted successfully',
-    });
-  } catch (error) {
-    console.error('❌ Failed to delete line:', error);
-    next(error);
-  } finally {
-    if (process.env.VERCEL && prisma) {
-      try {
-        await prisma.$disconnect();
-      } catch (disconnectError) {
-        console.error('❌ Failed to disconnect Prisma client:', disconnectError);
-      }
-    }
+  if (!savedLine) {
+    throw new AppError('Saved line not found', 404);
   }
+
+  await prisma.savedLine.delete({
+    where: { id },
+  });
+
+  console.log(`✅ Line deleted successfully: ${id}`);
+
+  res.json({
+    success: true,
+    message: 'Saved line deleted successfully',
+  });
 });
 
 // Clear all saved lines
 router.delete('/saved', authenticate, async (req, res, next) => {
-  let prisma: any = null;
-  
-  try {
-    const userId = req.user!.id;
+  const userId = req.user!.id;
 
-    console.log(`🗑️ Clearing all lines for user: ${userId}`);
+  console.log(`🗑️ Clearing all lines for user: ${userId}`);
 
-    prisma = getPrismaClient();
+  const result = await prisma.savedLine.deleteMany({
+    where: { userId },
+  });
 
-    const result = await prisma.savedLine.deleteMany({
-      where: { userId },
-    });
+  console.log(`✅ Cleared ${result.count} lines for user: ${userId}`);
 
-    console.log(`✅ Cleared ${result.count} lines for user: ${userId}`);
-
-    res.json({
-      success: true,
-      message: `${result.count} saved lines deleted successfully`,
-    });
-  } catch (error) {
-    console.error('❌ Failed to clear lines:', error);
-    next(error);
-  } finally {
-    if (process.env.VERCEL && prisma) {
-      try {
-        await prisma.$disconnect();
-      } catch (disconnectError) {
-        console.error('❌ Failed to disconnect Prisma client:', disconnectError);
-      }
-    }
-  }
+  res.json({
+    success: true,
+    message: `${result.count} saved lines deleted successfully`,
+  });
 });
 
 // Test database connection
 router.get('/test-db', async (req, res, next) => {
-  let prisma: any = null;
-  
   try {
     console.log('🧪 Testing database connection...');
-    
-    prisma = getPrismaClient();
     
     // Test basic connection with executeRaw to avoid prepared statements
     await prisma.$executeRaw`SELECT 1 as test`;
@@ -483,14 +374,6 @@ router.get('/test-db', async (req, res, next) => {
       error: 'Database connection failed',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
-  } finally {
-    if (process.env.VERCEL && prisma) {
-      try {
-        await prisma.$disconnect();
-      } catch (disconnectError) {
-        console.error('❌ Failed to disconnect Prisma client:', disconnectError);
-      }
-    }
   }
 });
 
