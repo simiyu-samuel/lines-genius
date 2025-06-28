@@ -1,5 +1,5 @@
 import express from 'express';
-import prisma from '../config/database';
+import { getFreshPrismaClient } from '../config/database';
 import { authenticate, optionalAuth } from '../middleware/auth';
 import { validate, schemas } from '../middleware/validation';
 import { generateLines, testOpenAIConnection } from '../services/openaiService';
@@ -9,6 +9,9 @@ import { AppError } from '../utils/AppError';
 import logger from '../utils/logger';
 
 const router = express.Router();
+
+// Get Prisma client (fresh for serverless, global for development)
+const getPrismaClient = () => getFreshPrismaClient();
 
 // Test AI services connection (for debugging)
 router.get('/test-ai', async (req, res, next) => {
@@ -34,6 +37,8 @@ router.get('/test-ai', async (req, res, next) => {
 
 // Generate lines
 router.post('/generate', optionalAuth, validate(schemas.generateLines), async (req, res, next) => {
+  let prisma: any = null;
+  
   try {
     const { category, tone = 'corporate', prompt, count = 4 } = req.body;
     const userId = req.user?.id;
@@ -45,6 +50,9 @@ router.post('/generate', optionalAuth, validate(schemas.generateLines), async (r
       count,
       hasPrompt: !!prompt
     });
+
+    // Get fresh Prisma client for this request
+    prisma = getPrismaClient();
 
     // Check usage limits for authenticated users
     if (userId) {
@@ -218,7 +226,7 @@ router.post('/generate', optionalAuth, validate(schemas.generateLines), async (r
     
     // Log failed generation attempt
     try {
-      if (req.user?.id) {
+      if (req.user?.id && prisma) {
         await prisma.generationLog.create({
           data: {
             userId: req.user.id,
@@ -238,16 +246,29 @@ router.post('/generate', optionalAuth, validate(schemas.generateLines), async (r
     }
 
     next(error);
+  } finally {
+    // Disconnect Prisma client in serverless environment
+    if (process.env.VERCEL && prisma) {
+      try {
+        await prisma.$disconnect();
+      } catch (disconnectError) {
+        console.error('❌ Failed to disconnect Prisma client:', disconnectError);
+      }
+    }
   }
 });
 
 // Save a line
 router.post('/save', authenticate, validate(schemas.saveLine), async (req, res, next) => {
+  let prisma: any = null;
+  
   try {
     const { text, category, tone, tags = [] } = req.body;
     const userId = req.user!.id;
 
     console.log(`💾 Saving line for user: ${userId}`);
+
+    prisma = getPrismaClient();
 
     const savedLine = await prisma.savedLine.create({
       data: {
@@ -268,16 +289,28 @@ router.post('/save', authenticate, validate(schemas.saveLine), async (req, res, 
   } catch (error) {
     console.error('❌ Failed to save line:', error);
     next(error);
+  } finally {
+    if (process.env.VERCEL && prisma) {
+      try {
+        await prisma.$disconnect();
+      } catch (disconnectError) {
+        console.error('❌ Failed to disconnect Prisma client:', disconnectError);
+      }
+    }
   }
 });
 
 // Get saved lines
 router.get('/saved', authenticate, async (req, res, next) => {
+  let prisma: any = null;
+  
   try {
     const userId = req.user!.id;
     const { category, search, page = 1, limit = 20 } = req.query;
 
     console.log(`📚 Fetching saved lines for user: ${userId}`);
+
+    prisma = getPrismaClient();
 
     const where: any = { userId };
 
@@ -321,16 +354,28 @@ router.get('/saved', authenticate, async (req, res, next) => {
   } catch (error) {
     console.error('❌ Failed to fetch saved lines:', error);
     next(error);
+  } finally {
+    if (process.env.VERCEL && prisma) {
+      try {
+        await prisma.$disconnect();
+      } catch (disconnectError) {
+        console.error('❌ Failed to disconnect Prisma client:', disconnectError);
+      }
+    }
   }
 });
 
 // Delete saved line
 router.delete('/saved/:id', authenticate, async (req, res, next) => {
+  let prisma: any = null;
+  
   try {
     const { id } = req.params;
     const userId = req.user!.id;
 
     console.log(`🗑️ Deleting line ${id} for user: ${userId}`);
+
+    prisma = getPrismaClient();
 
     const savedLine = await prisma.savedLine.findFirst({
       where: { id, userId },
@@ -353,15 +398,27 @@ router.delete('/saved/:id', authenticate, async (req, res, next) => {
   } catch (error) {
     console.error('❌ Failed to delete line:', error);
     next(error);
+  } finally {
+    if (process.env.VERCEL && prisma) {
+      try {
+        await prisma.$disconnect();
+      } catch (disconnectError) {
+        console.error('❌ Failed to disconnect Prisma client:', disconnectError);
+      }
+    }
   }
 });
 
 // Clear all saved lines
 router.delete('/saved', authenticate, async (req, res, next) => {
+  let prisma: any = null;
+  
   try {
     const userId = req.user!.id;
 
     console.log(`🗑️ Clearing all lines for user: ${userId}`);
+
+    prisma = getPrismaClient();
 
     const result = await prisma.savedLine.deleteMany({
       where: { userId },
@@ -376,16 +433,28 @@ router.delete('/saved', authenticate, async (req, res, next) => {
   } catch (error) {
     console.error('❌ Failed to clear lines:', error);
     next(error);
+  } finally {
+    if (process.env.VERCEL && prisma) {
+      try {
+        await prisma.$disconnect();
+      } catch (disconnectError) {
+        console.error('❌ Failed to disconnect Prisma client:', disconnectError);
+      }
+    }
   }
 });
 
 // Test database connection
 router.get('/test-db', async (req, res, next) => {
+  let prisma: any = null;
+  
   try {
     console.log('🧪 Testing database connection...');
     
-    // Test basic connection
-    await prisma.$queryRaw`SELECT 1 as test`;
+    prisma = getPrismaClient();
+    
+    // Test basic connection with executeRaw to avoid prepared statements
+    await prisma.$executeRaw`SELECT 1 as test`;
     
     // Test table access
     const userCount = await prisma.user.count();
@@ -403,7 +472,8 @@ router.get('/test-db', async (req, res, next) => {
           savedLines: lineCount,
           generationLogs: logCount
         },
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        serverless: !!process.env.VERCEL
       }
     });
   } catch (error) {
@@ -413,6 +483,14 @@ router.get('/test-db', async (req, res, next) => {
       error: 'Database connection failed',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
+  } finally {
+    if (process.env.VERCEL && prisma) {
+      try {
+        await prisma.$disconnect();
+      } catch (disconnectError) {
+        console.error('❌ Failed to disconnect Prisma client:', disconnectError);
+      }
+    }
   }
 });
 

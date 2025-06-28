@@ -26,13 +26,14 @@ const createPrismaClient = () => {
         url: databaseUrl,
       },
     },
-    // Serverless-specific configuration
+    // Serverless-specific configuration to prevent prepared statement conflicts
     errorFormat: 'pretty',
   });
 };
 
-if (process.env.NODE_ENV === 'production') {
-  // In production (serverless), create a new instance for each request
+// In serverless environments, always create a new instance to avoid prepared statement conflicts
+if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+  // For serverless (Vercel), create a new instance each time to avoid prepared statement conflicts
   prisma = createPrismaClient();
 } else {
   // In development, use a global variable to preserve the instance across hot reloads
@@ -47,11 +48,27 @@ export const connectDatabase = async () => {
     console.log('🔌 Attempting to connect to database...');
     console.log('Database URL exists:', !!process.env.DATABASE_URL);
     console.log('Environment:', process.env.NODE_ENV);
+    console.log('Serverless mode:', !!process.env.VERCEL);
     
-    // Test the connection with a simple query
-    await prisma.$queryRaw`SELECT 1 as test`;
-    console.log('✅ Database connected successfully');
-    return true;
+    // For serverless, create a fresh client to avoid prepared statement conflicts
+    if (process.env.VERCEL) {
+      console.log('🔄 Creating fresh Prisma client for serverless environment...');
+      // Don't reuse the global prisma instance in serverless
+      const freshClient = createPrismaClient();
+      
+      // Test the connection with a simple query that doesn't use prepared statements
+      await freshClient.$executeRaw`SELECT 1 as test`;
+      console.log('✅ Database connected successfully (serverless mode)');
+      
+      // Disconnect the test client
+      await freshClient.$disconnect();
+      return true;
+    } else {
+      // For local development, use the global instance
+      await prisma.$executeRaw`SELECT 1 as test`;
+      console.log('✅ Database connected successfully (development mode)');
+      return true;
+    }
   } catch (error) {
     console.error('❌ Database connection failed:', error);
     
@@ -62,11 +79,52 @@ export const connectDatabase = async () => {
     }
     
     // In serverless, don't throw - just return false
-    if (process.env.NODE_ENV === 'production') {
-      console.log('⚠️ Continuing without database connection in production');
+    if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+      console.log('⚠️ Continuing without database connection in serverless mode');
       return false;
     }
     throw error;
+  }
+};
+
+// Test database connection function
+export const testDatabaseConnection = async () => {
+  try {
+    console.log('🧪 Testing database connection...');
+    
+    // Create a fresh client for testing to avoid prepared statement conflicts
+    const testClient = process.env.VERCEL ? createPrismaClient() : prisma;
+    
+    // Test basic connection with raw SQL to avoid prepared statements
+    await testClient.$executeRaw`SELECT 1 as test`;
+    console.log('✅ Basic connection test passed');
+    
+    // Test if users table exists
+    const userCount = await testClient.user.count();
+    console.log(`✅ Users table accessible, count: ${userCount}`);
+    
+    // Test if other tables exist
+    const tablesExist = await Promise.allSettled([
+      testClient.savedLine.count(),
+      testClient.usageStats.count(),
+      testClient.generationLog.count()
+    ]);
+    
+    console.log('✅ Table accessibility test:', {
+      savedLines: tablesExist[0].status === 'fulfilled',
+      usageStats: tablesExist[1].status === 'fulfilled',
+      generationLogs: tablesExist[2].status === 'fulfilled'
+    });
+    
+    // Disconnect test client if it's different from the global one
+    if (process.env.VERCEL) {
+      await testClient.$disconnect();
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('❌ Database test failed:', error);
+    return false;
   }
 };
 
@@ -76,39 +134,6 @@ export const disconnectDatabase = async () => {
     console.log('✅ Database disconnected successfully');
   } catch (error) {
     console.error('❌ Database disconnection failed:', error);
-  }
-};
-
-// Test database connection function
-export const testDatabaseConnection = async () => {
-  try {
-    console.log('🧪 Testing database connection...');
-    
-    // Test basic connection
-    await prisma.$queryRaw`SELECT 1 as test`;
-    console.log('✅ Basic connection test passed');
-    
-    // Test if users table exists
-    const userCount = await prisma.user.count();
-    console.log(`✅ Users table accessible, count: ${userCount}`);
-    
-    // Test if other tables exist
-    const tablesExist = await Promise.allSettled([
-      prisma.savedLine.count(),
-      prisma.usageStats.count(),
-      prisma.generationLog.count()
-    ]);
-    
-    console.log('✅ Table accessibility test:', {
-      savedLines: tablesExist[0].status === 'fulfilled',
-      usageStats: tablesExist[1].status === 'fulfilled',
-      generationLogs: tablesExist[2].status === 'fulfilled'
-    });
-    
-    return true;
-  } catch (error) {
-    console.error('❌ Database test failed:', error);
-    return false;
   }
 };
 
@@ -122,5 +147,13 @@ process.on('SIGTERM', async () => {
   await disconnectDatabase();
   process.exit(0);
 });
+
+// Export a function that creates a fresh client for serverless environments
+export const getFreshPrismaClient = () => {
+  if (process.env.VERCEL) {
+    return createPrismaClient();
+  }
+  return prisma;
+};
 
 export default prisma;
