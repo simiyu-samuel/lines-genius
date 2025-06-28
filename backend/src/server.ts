@@ -24,7 +24,7 @@ dotenv.config();
 
 const app = express();
 
-// Trust proxy for Vercel
+// Trust proxy for Vercel and other platforms
 app.set('trust proxy', 1);
 
 // Rate limiting - more lenient for serverless
@@ -32,6 +32,7 @@ const limiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000'), // 15 minutes
   max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100'),
   message: {
+    success: false,
     error: 'Too many requests from this IP, please try again later.',
   },
   standardHeaders: true,
@@ -45,14 +46,36 @@ const limiter = rateLimit({
 // Middleware
 app.use(helmet({
   contentSecurityPolicy: false, // Disable for serverless
+  crossOriginEmbedderPolicy: false,
 }));
 
-app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+// CORS configuration
+const corsOptions = {
+  origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
+    const allowedOrigins = [
+      process.env.CORS_ORIGIN,
+      'http://localhost:5173',
+      'http://localhost:3000',
+      'https://lines-genius.vercel.app',
+      'https://linesgenius.com',
+      'https://www.linesgenius.com'
+    ].filter(Boolean);
+
+    // Allow requests with no origin (mobile apps, etc.)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key'],
-}));
+};
+
+app.use(cors(corsOptions));
 
 // Conditional logging for serverless
 if (process.env.NODE_ENV !== 'production') {
@@ -91,6 +114,7 @@ app.get('/health', (req, res) => {
     uptime: process.uptime(),
     environment: process.env.NODE_ENV || 'development',
     database: isConnected ? 'connected' : 'disconnected',
+    version: '1.0.0',
   });
 });
 
@@ -117,11 +141,15 @@ app.get('/', (req, res) => {
     message: 'Lines Genius API',
     version: '1.0.0',
     status: 'running',
+    timestamp: new Date().toISOString(),
     endpoints: {
       health: '/health',
       auth: '/api/auth',
       lines: '/api/lines',
       users: '/api/users',
+      subscriptions: '/api/subscriptions',
+      payments: '/api/payments',
+      api: '/api/v1',
     }
   });
 });

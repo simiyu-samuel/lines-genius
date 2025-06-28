@@ -13,16 +13,16 @@ import {
   Laugh,
   Video
 } from 'lucide-react';
-import { sendEmail, SUBSCRIPTION_TEMPLATE_ID } from '../components/MailService'; // Import SUBSCRIPTION_TEMPLATE_ID
+import { sendEmail, SUBSCRIPTION_TEMPLATE_ID } from '../components/MailService';
 
 export const Footer: React.FC = () => {
   const currentYear = new Date().getFullYear();
 
   const socialLinks = [
-    { icon: Github, href: 'https://github.com/Lines-Genius/.githbub', label: 'GitHub' },
+    { icon: Github, href: 'https://github.com/simiyu-samuel/lines-genius', label: 'GitHub' },
     { icon: Youtube, href: 'https://www.youtube.com/@LinesGenius', label: 'YouTube' },
-    { icon: Twitter, href: '#', label: 'Twitter' },
-    { icon: Mail, href: '#', label: 'Email' },
+    { icon: Twitter, href: 'https://twitter.com/linesgenius', label: 'Twitter' },
+    { icon: Mail, href: 'mailto:hello@linesgenius.com', label: 'Email' },
   ];
 
   const quickLinks = [
@@ -67,7 +67,7 @@ export const Footer: React.FC = () => {
     };
 
     try {
-      console.log('Attempting to use subscription template:', SUBSCRIPTION_TEMPLATE_ID); // Debug log
+      console.log('Attempting to use subscription template:', SUBSCRIPTION_TEMPLATE_ID);
       const result = await sendEmail(subscriptionData, SUBSCRIPTION_TEMPLATE_ID);
       if (result.success) {
         setIsSubscribed(true);
@@ -144,6 +144,8 @@ export const Footer: React.FC = () => {
                 <motion.a
                   key={social.label}
                   href={social.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   whileHover={{ scale: 1.1, y: -2 }}
                   whileTap={{ scale: 0.95 }}
                   initial={{ opacity: 0, y: 20 }}

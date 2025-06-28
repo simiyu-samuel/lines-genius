@@ -31,7 +31,7 @@ export const generateLines = async (request: GenerateRequest): Promise<GenerateR
       throw new Error(response.error || 'Failed to generate lines');
     }
   } catch (error: any) {
-    console.warn('Backend API failed, falling back to mock AI:', error);
+    console.warn('Backend API failed, falling back to mock AI:', error.message || error);
     
     // Fallback to mock AI if backend fails
     const fallbackLines = await generateLinesFallback(request);

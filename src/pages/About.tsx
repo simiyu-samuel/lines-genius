@@ -14,6 +14,7 @@ import {
   Lightbulb,
   Heart
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export const About: React.FC = () => {
   const features = [
@@ -56,7 +57,6 @@ export const About: React.FC = () => {
       role: 'Founder & Lead Developer',
       bio: 'Full-stack developer blending code, creativity, and AI to build next-gen tools that spark innovation for creators and devs.',
       avatar: nasri
-  
     },
     {
       name: 'Wambia O. Kennedy',
@@ -194,7 +194,7 @@ export const About: React.FC = () => {
               Meet Our Team
             </h2>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
               {team.map((member, index) => (
                 <motion.div
                   key={member.name}
@@ -203,13 +203,13 @@ export const About: React.FC = () => {
                   transition={{ duration: 0.6, delay: 0.8 + index * 0.1 }}
                   className="bg-white/80 dark:bg-dark-800/80 backdrop-blur-lg rounded-2xl p-6 border border-white/20 dark:border-neon-purple/20 shadow-xl text-center hover:shadow-2xl hover:shadow-neon-purple/10 transition-all duration-300"
                 >
-                  <div className="text-6xl mb-4">
+                  <div className="w-24 h-24 mx-auto mb-4 rounded-full overflow-hidden">
                     <img
                       src={member.avatar}
-                      alt="Samuel developer avatar"
-                      className="w-full h-full object-contain rounded-lg"
+                      alt={`${member.name} avatar`}
+                      className="w-full h-full object-cover"
                     />
-                    </div>
+                  </div>
                   <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
                     {member.name}
                   </h3>
@@ -243,25 +243,31 @@ export const About: React.FC = () => {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <motion.a
-                href="/generate"
+              <motion.div
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="inline-flex items-center space-x-2 bg-gradient-to-r from-neon-purple to-neon-cyan text-white px-6 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:shadow-neon-purple/25"
               >
-                <Sparkles className="h-5 w-5" />
-                <span>Generate Lines</span>
-              </motion.a>
+                <Link
+                  to="/generate"
+                  className="inline-flex items-center space-x-2 bg-gradient-to-r from-neon-purple to-neon-cyan text-white px-6 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:shadow-neon-purple/25"
+                >
+                  <Sparkles className="h-5 w-5" />
+                  <span>Generate Lines</span>
+                </Link>
+              </motion.div>
               
-              <motion.a
-                href="/contact"
+              <motion.div
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="inline-flex items-center space-x-2 bg-white/20 dark:bg-dark-700/50 text-gray-900 dark:text-white px-6 py-3 rounded-lg font-semibold border border-gray-300 dark:border-neon-purple/30 hover:bg-white/30 dark:hover:bg-dark-600/50 transition-all duration-300"
               >
-                <Users className="h-5 w-5" />
-                <span>Get in Touch</span>
-              </motion.a>
+                <Link
+                  to="/contact"
+                  className="inline-flex items-center space-x-2 bg-white/20 dark:bg-dark-700/50 text-gray-900 dark:text-white px-6 py-3 rounded-lg font-semibold border border-gray-300 dark:border-neon-purple/30 hover:bg-white/30 dark:hover:bg-dark-600/50 transition-all duration-300"
+                >
+                  <Users className="h-5 w-5" />
+                  <span>Get in Touch</span>
+                </Link>
+              </motion.div>
             </div>
           </div>
         </motion.div>

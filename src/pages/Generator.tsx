@@ -71,6 +71,7 @@ export const Generator: React.FC = () => {
       await healthAPI.check();
       setBackendStatus('online');
     } catch (error) {
+      console.warn('Backend health check failed, using fallback mode:', error);
       setBackendStatus('offline');
     }
   };
