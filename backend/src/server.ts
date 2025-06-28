@@ -23,7 +23,6 @@ import webhookRoutes from './routes/webhooks';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3001;
 
 // Trust proxy for rate limiting
 app.set('trust proxy', 1);
@@ -76,32 +75,36 @@ app.use('/webhooks', webhookRoutes);
 app.use(notFound);
 app.use(errorHandler);
 
-// Start server
-const startServer = async () => {
-  try {
-    // Connect to database
-    await connectDatabase();
-    
-    app.listen(PORT, () => {
-      logger.info(`🚀 Server running on port ${PORT}`);
-      logger.info(`📊 Environment: ${process.env.NODE_ENV}`);
-      logger.info(`🔗 CORS enabled for: ${process.env.CORS_ORIGIN}`);
-    });
-  } catch (error) {
-    logger.error('Failed to start server:', error);
-    process.exit(1);
+// Initialize database connection for serverless
+let isConnected = false;
+
+const initializeDatabase = async () => {
+  if (!isConnected) {
+    try {
+      await connectDatabase();
+      isConnected = true;
+      logger.info('✅ Database connected successfully');
+    } catch (error) {
+      logger.error('❌ Database connection failed:', error);
+      // Don't throw error in serverless environment
+    }
   }
 };
 
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  logger.info('SIGTERM received, shutting down gracefully');
-  process.exit(0);
+// Initialize database on first request
+app.use(async (req, res, next) => {
+  await initializeDatabase();
+  next();
 });
 
-process.on('SIGINT', () => {
-  logger.info('SIGINT received, shutting down gracefully');
-  process.exit(0);
-});
+// For local development
+if (process.env.NODE_ENV !== 'production') {
+  const PORT = process.env.PORT || 3001;
+  app.listen(PORT, () => {
+    logger.info(`🚀 Server running on port ${PORT}`);
+    logger.info(`📊 Environment: ${process.env.NODE_ENV}`);
+    logger.info(`🔗 CORS enabled for: ${process.env.CORS_ORIGIN}`);
+  });
+}
 
-startServer();
+export default app;

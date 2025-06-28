@@ -2,7 +2,7 @@
   "name": "lines-genius-backend",
   "version": "1.0.0",
   "description": "Backend API for Lines Genius - AI-powered creative line generation platform",
-  "main": "dist/server.js",
+  "main": "api/index.ts",
   "scripts": {
     "dev": "nodemon src/server.ts",
     "build": "tsc && npx prisma generate",
@@ -13,7 +13,8 @@
     "migrate:deploy": "npx prisma migrate deploy",
     "generate": "npx prisma generate",
     "studio": "npx prisma studio",
-    "postinstall": "npx prisma generate"
+    "postinstall": "npx prisma generate",
+    "vercel-build": "npx prisma generate && tsc"
   },
   "keywords": [
     "api",
