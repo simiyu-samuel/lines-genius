@@ -5,7 +5,7 @@
   "main": "api/index.ts",
   "scripts": {
     "dev": "nodemon src/server.ts",
-    "build": "tsc && npx prisma generate",
+    "build": "rm -rf dist && tsc && npx prisma generate",
     "start": "npx prisma migrate deploy && node dist/server.js",
     "test": "jest",
     "lint": "eslint src/**/*.ts",
@@ -14,7 +14,7 @@
     "generate": "npx prisma generate",
     "studio": "npx prisma studio",
     "postinstall": "npx prisma generate",
-    "vercel-build": "npx prisma generate && tsc"
+    "vercel-build": "rm -rf dist && npx prisma generate && tsc"
   },
   "keywords": [
     "api",
