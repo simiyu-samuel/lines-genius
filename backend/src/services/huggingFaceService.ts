@@ -21,9 +21,9 @@ export interface GenerateResponse {
 const HUGGINGFACE_API_URL = 'https://api-inference.huggingface.co/models';
 const HUGGINGFACE_API_KEY = process.env.HUGGINGFACE_API_KEY;
 
-// Model selection for different tasks
+// Model selection for different tasks - using more reliable models
 const MODELS = {
-  text_generation: 'gpt2', // Free and reliable
+  text_generation: process.env.HUGGINGFACE_MODEL || 'gpt2', // Use environment variable or fallback to gpt2
   creative_writing: 'microsoft/DialoGPT-medium',
   business_text: 'distilgpt2'
 };
@@ -131,40 +131,65 @@ async function callHuggingFaceAPI(prompt: string): Promise<string> {
     throw new Error('Hugging Face API key not configured');
   }
 
-  try {
-    const response = await fetch(`${HUGGINGFACE_API_URL}/${MODELS.text_generation}`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${HUGGINGFACE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        inputs: prompt,
-        parameters: {
-          max_length: 100,
-          temperature: 0.8,
-          top_p: 0.9,
-          do_sample: true,
-          num_return_sequences: 1
-        }
-      })
-    });
+  // List of fallback models to try if the primary model fails
+  const fallbackModels = [
+    MODELS.text_generation,
+    'gpt2',
+    'distilgpt2',
+    'microsoft/DialoGPT-small'
+  ];
 
-    if (!response.ok) {
-      throw new Error(`Hugging Face API error: ${response.status} ${response.statusText}`);
-    }
+  for (const model of fallbackModels) {
+    try {
+      logger.info(`Trying Hugging Face model: ${model}`);
+      
+      const response = await fetch(`${HUGGINGFACE_API_URL}/${model}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${HUGGINGFACE_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          inputs: prompt,
+          parameters: {
+            max_length: 100,
+            temperature: 0.8,
+            top_p: 0.9,
+            do_sample: true,
+            num_return_sequences: 1
+          }
+        })
+      });
 
-    const data = await response.json();
-    
-    if (Array.isArray(data) && data.length > 0 && data[0].generated_text) {
-      return data[0].generated_text;
+      if (response.status === 404) {
+        logger.warn(`Model ${model} not found, trying next fallback`);
+        continue;
+      }
+
+      if (!response.ok) {
+        throw new Error(`Hugging Face API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      
+      if (Array.isArray(data) && data.length > 0 && data[0].generated_text) {
+        logger.info(`Successfully used model: ${model}`);
+        return data[0].generated_text;
+      }
+      
+      throw new Error('Invalid response format from Hugging Face API');
+    } catch (error: any) {
+      if (error.message.includes('404') || error.message.includes('not found')) {
+        logger.warn(`Model ${model} failed, trying next fallback`);
+        continue;
+      }
+      logger.error(`Hugging Face API call failed for model ${model}:`, error);
+      throw error;
     }
-    
-    throw new Error('Invalid response format from Hugging Face API');
-  } catch (error) {
-    logger.error('Hugging Face API call failed:', error);
-    throw error;
   }
+
+  // If all models fail, throw an error
+  throw new Error('All Hugging Face models failed. Please check your API key and model configuration.');
 }
 
 export const generateLinesWithHuggingFace = async (request: GenerateRequest): Promise<GenerateResponse> => {

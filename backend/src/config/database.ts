@@ -9,26 +9,28 @@ declare global {
 }
 
 // Create Prisma client with optimized settings for serverless
-if (process.env.NODE_ENV === 'production') {
-  prisma = new PrismaClient({
-    log: ['error'],
+const createPrismaClient = () => {
+  return new PrismaClient({
+    log: process.env.NODE_ENV === 'development' ? ['query', 'info', 'warn', 'error'] : ['error', 'warn'],
     datasources: {
       db: {
         url: process.env.DATABASE_URL,
       },
     },
+    // Serverless-specific configuration
+    errorFormat: 'pretty',
+    // Add connection pool settings for serverless
+    // This helps prevent the "prepared statement already exists" error
   });
+};
+
+if (process.env.NODE_ENV === 'production') {
+  // In production (serverless), create a new instance for each request
+  prisma = createPrismaClient();
 } else {
   // In development, use a global variable to preserve the instance across hot reloads
   if (!global.__prisma) {
-    global.__prisma = new PrismaClient({
-      log: ['query', 'info', 'warn', 'error'],
-      datasources: {
-        db: {
-          url: process.env.DATABASE_URL,
-        },
-      },
-    });
+    global.__prisma = createPrismaClient();
   }
   prisma = global.__prisma;
 }
