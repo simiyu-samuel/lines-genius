@@ -27,6 +27,50 @@ const app = express();
 // Trust proxy for Vercel and other platforms
 app.set('trust proxy', 1);
 
+// CORS configuration - Define it early
+const corsOptions = {
+  origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
+    const allowedOrigins = [
+      process.env.CORS_ORIGIN,
+      'http://localhost:5173',
+      'http://localhost:3000',
+      'https://lines-genius.vercel.app',
+      'https://linesgenius.com',
+      'https://www.linesgenius.com'
+    ].filter(Boolean);
+
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`Not allowed by CORS for origin: ${origin}`));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key'],
+};
+
+// ===================================================================
+//
+//                        *** THE FIX ***
+// Handle preflight requests across all routes. This must be one of
+// the first middleware applied.
+//
+app.options('*', cors(corsOptions));
+//
+// ===================================================================
+
+// Middleware
+app.use(cors(corsOptions)); // Apply CORS for all other requests
+
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false,
+}));
+
 // Rate limiting - more lenient for serverless
 const limiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000'), // 15 minutes
@@ -43,51 +87,19 @@ const limiter = rateLimit({
   }
 });
 
-// Middleware
-app.use(helmet({
-  contentSecurityPolicy: false, // Disable for serverless
-  crossOriginEmbedderPolicy: false,
-}));
-
-// CORS configuration
-const corsOptions = {
-  origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
-    const allowedOrigins = [
-      process.env.CORS_ORIGIN,
-      'http://localhost:5173',
-      'http://localhost:3000',
-      'https://lines-genius.vercel.app',
-      'https://linesgenius.com',
-      'https://www.linesgenius.com'
-    ].filter(Boolean);
-
-    // Allow requests with no origin (mobile apps, etc.)
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key'],
-};
-
-app.use(cors(corsOptions));
+app.use(limiter);
 
 // Conditional logging for serverless
 if (process.env.NODE_ENV !== 'production') {
   app.use(morgan('combined', { stream: { write: (message) => logger.info(message.trim()) } }));
 }
 
-app.use(limiter);
-
 // Body parsing middleware
 app.use('/webhooks', express.raw({ type: 'application/json' })); // Raw body for webhooks
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
+
+// ... (rest of your file remains the same) ...
 
 // Database connection state
 let isConnected = false;
@@ -167,7 +179,7 @@ if (process.env.NODE_ENV !== 'production' && require.main === module) {
     app.listen(PORT, () => {
       logger.info(`🚀 Server running on port ${PORT}`);
       logger.info(`📊 Environment: ${process.env.NODE_ENV}`);
-      logger.info(`🔗 CORS enabled for: ${process.env.CORS_ORIGIN}`);
+      logger.info(`🔗 CORS enabled for: ${process.env.CORS_ORIGIN || 'multiple origins'}`);
     });
   }).catch((error) => {
     logger.error('Failed to start server:', error);
