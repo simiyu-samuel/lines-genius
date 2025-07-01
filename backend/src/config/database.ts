@@ -3,12 +3,12 @@ import { PrismaClient } from '@prisma/client';
 // Global variable to store the Prisma client instance
 let prisma: PrismaClient;
 
-// Declare global variable for development hot reloading
+// Declare global variable for development hot reloading and serverless environments
 declare global {
   var __prisma: PrismaClient | undefined;
 }
 
-// Create Prisma client with optimized settings
+// Function to create and configure the Prisma Client
 const createPrismaClient = () => {
   const databaseUrl = process.env.DATABASE_URL;
   
@@ -17,7 +17,7 @@ const createPrismaClient = () => {
     throw new Error('DATABASE_URL is required');
   }
 
-  console.log('🔌 Creating Prisma client with URL:', databaseUrl.replace(/:[^:@]*@/, ':****@'));
+  console.log('🔌 Creating new Prisma client instance...');
 
   return new PrismaClient({
     log: process.env.NODE_ENV === 'development' ? ['query', 'info', 'warn', 'error'] : ['error', 'warn'],
@@ -30,26 +30,29 @@ const createPrismaClient = () => {
   });
 };
 
-// Use a single Prisma instance for all environments
+// This singleton pattern prevents creating a new PrismaClient on every
+// function invocation in a serverless environment (warm start)
 if (!global.__prisma) {
   global.__prisma = createPrismaClient();
 }
 prisma = global.__prisma;
 
+/**
+ * Connects to the database using the global Prisma client.
+ * This function is idempotent: it will do nothing if already connected.
+ */
 export const connectDatabase = async () => {
   try {
     console.log('🔌 Attempting to connect to database...');
-    console.log('Database URL exists:', !!process.env.DATABASE_URL);
-    console.log('Environment:', process.env.NODE_ENV);
-    
-    // Test the connection with a simple query
-    await prisma.$executeRaw`SELECT 1 as test`;
+    // ✅ FIX: Use prisma.$connect() to establish or verify the connection.
+    // This method is designed for this purpose and avoids creating conflicting
+    // prepared statements on subsequent calls in a warm serverless environment.
+    await prisma.$connect();
     console.log('✅ Database connected successfully');
     return true;
   } catch (error) {
     console.error('❌ Database connection failed:', error);
     
-    // Log more details about the error
     if (error instanceof Error) {
       console.error('Error message:', error.message);
       console.error('Error stack:', error.stack);
@@ -59,27 +62,30 @@ export const connectDatabase = async () => {
   }
 };
 
-// Test database connection function
+/**
+ * Runs a series of tests to ensure the database is connected and accessible.
+ */
 export const testDatabaseConnection = async () => {
   try {
     console.log('🧪 Testing database connection...');
     
-    // Test basic connection
-    await prisma.$executeRaw`SELECT 1 as test`;
+    // ✅ FIX: Test basic connection using the correct method first.
+    await prisma.$connect();
     console.log('✅ Basic connection test passed');
     
-    // Test if users table exists
+    // Test if a specific table exists by counting its rows.
+    // This is a more robust test than just connecting.
     const userCount = await prisma.user.count();
-    console.log(`✅ Users table accessible, count: ${userCount}`);
+    console.log(`✅ 'users' table is accessible, count: ${userCount}`);
     
-    // Test if other tables exist
+    // Optionally test other critical tables
     const tablesExist = await Promise.allSettled([
       prisma.savedLine.count(),
       prisma.usageStats.count(),
       prisma.generationLog.count()
     ]);
     
-    console.log('✅ Table accessibility test:', {
+    console.log('✅ Other table accessibility test:', {
       savedLines: tablesExist[0].status === 'fulfilled',
       usageStats: tablesExist[1].status === 'fulfilled',
       generationLogs: tablesExist[2].status === 'fulfilled'
@@ -92,6 +98,9 @@ export const testDatabaseConnection = async () => {
   }
 };
 
+/**
+ * Disconnects the Prisma client from the database.
+ */
 export const disconnectDatabase = async () => {
   try {
     await prisma.$disconnect();
@@ -101,7 +110,7 @@ export const disconnectDatabase = async () => {
   }
 };
 
-// Graceful shutdown handler
+// Graceful shutdown handler to ensure the database connection is closed properly.
 process.on('SIGINT', async () => {
   await disconnectDatabase();
   process.exit(0);
@@ -112,4 +121,5 @@ process.on('SIGTERM', async () => {
   process.exit(0);
 });
 
+// Export the singleton instance for use throughout your application
 export default prisma;
