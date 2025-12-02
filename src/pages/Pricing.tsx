@@ -37,9 +37,9 @@ export const Pricing: React.FC = () => {
   const getPlanColor = (planId: string) => {
     switch (planId) {
       case 'free': return 'from-gray-500 to-gray-600';
-      case 'pro': return 'from-neon-purple to-neon-pink';
-      case 'business': return 'from-neon-cyan to-neon-green';
-      default: return 'from-neon-purple to-neon-cyan';
+      case 'pro': return 'from-primary-500 to-secondary-600';
+      case 'business': return 'from-accent-500 to-success-600';
+      default: return 'from-primary-500 to-secondary-600';
     }
   };
 
@@ -76,7 +76,7 @@ export const Pricing: React.FC = () => {
           transition={{ duration: 0.6 }}
           className="text-center mb-16"
         >
-          <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-neon-purple to-neon-cyan bg-clip-text text-transparent">
+          <h1 className="text-4xl md:text-5xl font-bold mb-4 gradient-text">
             Choose Your Plan
           </h1>
           <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto mb-8">
@@ -85,7 +85,7 @@ export const Pricing: React.FC = () => {
           </p>
 
           {/* Billing Toggle */}
-          <div className="inline-flex items-center bg-white/80 dark:bg-dark-800/80 backdrop-blur-lg rounded-full p-1 border border-white/20 dark:border-neon-purple/20">
+          <div className="inline-flex items-center bg-white dark:bg-dark-800 rounded-full p-1 border border-gray-200 dark:border-dark-700 shadow-soft">
             <button
               onClick={() => setBillingInterval('month')}
               className={`px-6 py-2 rounded-full text-sm font-medium transition-all duration-200 ${

@@ -52,7 +52,7 @@ export const SavedLines: React.FC = () => {
           transition={{ duration: 0.6 }}
           className="text-center max-w-md"
         >
-          <div className="bg-white/80 dark:bg-dark-800/80 backdrop-blur-lg rounded-2xl p-8 border border-white/20 dark:border-neon-purple/20 shadow-xl">
+          <div className="card p-8">
             <Lock className="h-16 w-16 text-gray-400 dark:text-gray-600 mx-auto mb-6" />
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
               Sign In Required
@@ -64,13 +64,13 @@ export const SavedLines: React.FC = () => {
             <div className="space-y-4">
               <Link
                 to="/auth"
-                className="block w-full bg-gradient-to-r from-neon-purple to-neon-cyan text-white px-6 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:shadow-neon-purple/25"
+                className="block w-full bg-gradient-to-r from-primary-500 to-accent-600 text-white px-6 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:shadow-neon-purple/25"
               >
                 Sign In / Sign Up
               </Link>
               <Link
                 to="/generate"
-                className="block w-full bg-white/20 dark:bg-dark-700/50 text-gray-900 dark:text-white px-6 py-3 rounded-lg font-semibold border border-gray-300 dark:border-neon-purple/30 hover:bg-white/30 dark:hover:bg-dark-600/50 transition-all duration-300"
+                className="block w-full bg-white/20 dark:bg-dark-700/50 text-gray-900 dark:text-white px-6 py-3 rounded-lg font-semibold border border-gray-300 dark:border-primary-300 dark:border-primary-700 hover:bg-white/30 dark:hover:bg-dark-600/50 transition-all duration-300"
               >
                 Generate Lines First
               </Link>
@@ -155,7 +155,7 @@ export const SavedLines: React.FC = () => {
           transition={{ duration: 0.6 }}
           className="text-center mb-12"
         >
-          <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-neon-purple to-neon-cyan bg-clip-text text-transparent">
+          <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary-500 to-accent-600 bg-clip-text text-transparent">
             Saved Lines
           </h1>
           <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
@@ -168,7 +168,7 @@ export const SavedLines: React.FC = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="bg-white/80 dark:bg-dark-800/80 backdrop-blur-lg rounded-2xl p-6 border border-white/20 dark:border-neon-purple/20 shadow-xl mb-8"
+          className="bg-white dark:bg-dark-800 rounded-2xl p-6 border border-gray-200 dark:border-dark-700 shadow-xl mb-8"
         >
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div className="flex items-center space-x-4 flex-1">
@@ -179,7 +179,7 @@ export const SavedLines: React.FC = () => {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Search your lines..."
-                  className="w-full pl-10 pr-4 py-3 rounded-lg bg-white/50 dark:bg-dark-700/50 border border-gray-300 dark:border-neon-purple/30 focus:ring-2 focus:ring-neon-purple focus:border-transparent transition-all duration-200 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                  className="w-full pl-10 pr-4 py-3 rounded-lg bg-white/50 dark:bg-dark-700/50 border border-gray-300 dark:border-primary-300 dark:border-primary-700 focus:ring-2 focus:ring-neon-purple focus:border-transparent transition-all duration-200 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                 />
               </div>
               
@@ -187,7 +187,7 @@ export const SavedLines: React.FC = () => {
                 <select
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="pl-4 pr-10 py-3 rounded-lg bg-white/50 dark:bg-dark-700/50 border border-gray-300 dark:border-neon-purple/30 focus:ring-2 focus:ring-neon-purple focus:border-transparent transition-all duration-200 text-gray-900 dark:text-white"
+                  className="pl-4 pr-10 py-3 rounded-lg bg-white/50 dark:bg-dark-700/50 border border-gray-300 dark:border-primary-300 dark:border-primary-700 focus:ring-2 focus:ring-neon-purple focus:border-transparent transition-all duration-200 text-gray-900 dark:text-white"
                 >
                   <option value="all">All Categories</option>
                   {categories.filter(cat => cat !== 'all').map((category) => (
@@ -223,7 +223,7 @@ export const SavedLines: React.FC = () => {
         {isLoading && (
           <div className="flex items-center justify-center py-12">
             <div className="text-center">
-              <Loader className="h-12 w-12 animate-spin text-neon-purple mx-auto mb-4" />
+              <Loader className="h-12 w-12 animate-spin text-secondary-600 dark:text-secondary-400 mx-auto mb-4" />
               <p className="text-gray-600 dark:text-gray-300">Loading your saved lines...</p>
             </div>
           </div>
@@ -245,14 +245,14 @@ export const SavedLines: React.FC = () => {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.4, delay: index * 0.05 }}
-                    className="group bg-white/80 dark:bg-dark-800/80 backdrop-blur-lg rounded-2xl p-6 border border-white/20 dark:border-neon-purple/20 shadow-xl hover:shadow-2xl hover:shadow-neon-purple/10 transition-all duration-300 hover:border-neon-cyan/50"
+                    className="group bg-white dark:bg-dark-800 rounded-2xl p-6 border border-gray-200 dark:border-dark-700 shadow-xl hover:shadow-2xl hover:shadow-neon-purple/10 transition-all duration-300 hover:border-neon-cyan/50"
                   >
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center space-x-2">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${getToneColor(line.tone)}`}>
                           {line.tone}
                         </span>
-                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-neon-purple/20 text-neon-purple">
+                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-neon-purple/20 text-secondary-600 dark:text-secondary-400">
                           {getCategoryLabel(line.category)}
                         </span>
                       </div>
@@ -281,7 +281,7 @@ export const SavedLines: React.FC = () => {
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         onClick={() => copyToClipboard(line.text, line.id)}
-                        className="flex items-center space-x-1 px-3 py-1 rounded-md bg-neon-cyan/20 text-neon-cyan hover:bg-neon-cyan/30 transition-colors duration-200 text-sm font-medium"
+                        className="flex items-center space-x-1 px-3 py-1 rounded-md bg-neon-cyan/20 text-primary-600 dark:text-primary-400 hover:bg-neon-cyan/30 transition-colors duration-200 text-sm font-medium"
                       >
                         {copiedId === line.id ? (
                           <>
@@ -316,7 +316,7 @@ export const SavedLines: React.FC = () => {
                   href="/generate"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="inline-flex items-center space-x-2 bg-gradient-to-r from-neon-purple to-neon-cyan text-white px-6 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:shadow-neon-purple/25"
+                  className="inline-flex items-center space-x-2 bg-gradient-to-r from-primary-500 to-accent-600 text-white px-6 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:shadow-neon-purple/25"
                 >
                   <BookOpen className="h-5 w-5" />
                   <span>Generate Lines</span>
@@ -342,7 +342,7 @@ export const SavedLines: React.FC = () => {
                     setSearchTerm('');
                     setSelectedCategory('all');
                   }}
-                  className="inline-flex items-center space-x-2 bg-gradient-to-r from-neon-purple to-neon-cyan text-white px-6 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:shadow-neon-purple/25"
+                  className="inline-flex items-center space-x-2 bg-gradient-to-r from-primary-500 to-accent-600 text-white px-6 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:shadow-neon-purple/25"
                 >
                   <Filter className="h-5 w-5" />
                   <span>Clear Filters</span>

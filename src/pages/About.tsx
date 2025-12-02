@@ -22,25 +22,25 @@ export const About: React.FC = () => {
       icon: Video,
       title: 'Programming Videos',
       description: 'Educational and entertaining content for developers of all levels. From beginner tutorials to advanced concepts.',
-      gradient: 'from-neon-purple to-neon-pink'
+      gradient: 'from-primary-500 to-secondary-600'
     },
     {
       icon: Laugh,
       title: 'Coding Humor',
       description: 'Light-hearted jokes and memes to brighten your coding sessions and make programming more enjoyable.',
-      gradient: 'from-neon-cyan to-neon-green'
+      gradient: 'from-accent-500 to-success-600'
     },
     {
       icon: Code,
       title: 'Project Showcases',
       description: 'Showcasing creative and practical programming projects that inspire and teach real-world development.',
-      gradient: 'from-neon-pink to-neon-yellow'
+      gradient: 'from-secondary-500 to-warning-600'
     },
     {
       icon: Sparkles,
       title: 'Creative Lines Generator',
       description: 'AI-powered tool to generate creative lines for business taglines, social media, and marketing content.',
-      gradient: 'from-neon-green to-neon-cyan'
+      gradient: 'from-success-500 to-accent-600'
     }
   ];
 
@@ -76,7 +76,7 @@ export const About: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
           >
-            <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-neon-purple via-neon-cyan to-neon-green bg-clip-text text-transparent">
+            <h1 className="text-5xl md:text-6xl font-bold mb-6 gradient-text">
               About Lines Genius
             </h1>
             <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 mb-8 max-w-3xl mx-auto">

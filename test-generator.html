@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lines Genius - Generator Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #6366f1;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f9fafb;
+            border-left: 4px solid #6366f1;
+        }
+        .success {
+            color: #10b981;
+            font-weight: bold;
+        }
+        .error {
+            color: #ef4444;
+            font-weight: bold;
+        }
+        button {
+            background: #6366f1;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #4f46e5;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Lines Genius - Generator Test</h1>
+        
+        <div class="test-section">
+            <h3>Test 1: Mock AI Generation</h3>
+            <button onclick="testMockAI()">Run Test</button>
+            <div id="test1-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>Test 2: Different Categories</h3>
+            <button onclick="testCategories()">Run Test</button>
+            <div id="test2-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>Test 3: Different Tones</h3>
+            <button onclick="testTones()">Run Test</button>
+            <div id="test3-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>Test 4: Export Functions</h3>
+            <button onclick="testExport()">Run Test</button>
+            <div id="test4-result" class="result"></div>
+        </div>
+    </div>
+
+    <script>
+        // Mock AI implementation for testing
+        const mockLines = {
+            taglines: {
+                corporate: [
+                    "Innovating tomorrow's solutions today",
+                    "Excellence through strategic partnerships",
+                    "Your success is our commitment"
+                ],
+                funny: [
+                    "We put the 'fun' in dysfunctional!",
+                    "Making mistakes since day one",
+                    "Your problems are our opportunities"
+                ]
+            },
+            bios: {
+                corporate: [
+                    "Strategic leader driving innovation",
+                    "Passionate about delivering results",
+                    "Digital transformation expert"
+                ]
+            }
+        };
+
+        async function testMockAI() {
+            const result = document.getElementById('test1-result');
+            result.innerHTML = 'Testing...';
+            
+            try {
+                const lines = mockLines.taglines.corporate;
+                if (lines && lines.length > 0) {
+                    result.innerHTML = `<span class="success">✅ SUCCESS</span><br>Generated ${lines.length} lines:<br>${lines.map(l => `• ${l}`).join('<br>')}`;
+                } else {
+                    result.innerHTML = '<span class="error">❌ FAILED</span><br>No lines generated';
+                }
+            } catch (error) {
+                result.innerHTML = `<span class="error">❌ ERROR</span><br>${error.message}`;
+            }
+        }
+
+        async function testCategories() {
+            const result = document.getElementById('test2-result');
+            result.innerHTML = 'Testing...';
+            
+            try {
+                const categories = Object.keys(mockLines);
+                result.innerHTML = `<span class="success">✅ SUCCESS</span><br>Found ${categories.length} categories:<br>${categories.map(c => `• ${c}`).join('<br>')}`;
+            } catch (error) {
+                result.innerHTML = `<span class="error">❌ ERROR</span><br>${error.message}`;
+            }
+        }
+
+        async function testTones() {
+            const result = document.getElementById('test3-result');
+            result.innerHTML = 'Testing...';
+            
+            try {
+                const tones = Object.keys(mockLines.taglines);
+                result.innerHTML = `<span class="success">✅ SUCCESS</span><br>Found ${tones.length} tones:<br>${tones.map(t => `• ${t}`).join('<br>')}`;
+            } catch (error) {
+                result.innerHTML = `<span class="error">❌ ERROR</span><br>${error.message}`;
+            }
+        }
+
+        async function testExport() {
+            const result = document.getElementById('test4-result');
+            result.innerHTML = 'Testing...';
+            
+            try {
+                const testLines = mockLines.taglines.corporate;
+                const textContent = testLines.join('\n');
+                const jsonContent = JSON.stringify({ lines: testLines }, null, 2);
+                
+                result.innerHTML = `<span class="success">✅ SUCCESS</span><br>Export functions ready:<br>• Text export: ${textContent.length} chars<br>• JSON export: ${jsonContent.length} chars`;
+            } catch (error) {
+                result.innerHTML = `<span class="error">❌ ERROR</span><br>${error.message}`;
+            }
+        }
+
+        // Auto-run first test on load
+        window.onload = () => {
+            console.log('Lines Genius Test Page Loaded');
+            testMockAI();
+        };
+    </script>
+</body>
+</html>

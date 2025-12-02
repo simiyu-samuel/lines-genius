@@ -84,7 +84,7 @@ export const Contact: React.FC = () => {
     { icon: Github, href: 'https://github.com/linesgenius', label: 'GitHub', color: 'hover:text-gray-900 dark:hover:text-white' },
     { icon: Youtube, href: 'https://www.youtube.com/@LinesGenius', label: 'YouTube', color: 'hover:text-red-500' },
     { icon: Twitter, href: '#', label: 'Twitter', color: 'hover:text-blue-500' },
-    { icon: Mail, href: '#', label: 'Email', color: 'hover:text-neon-cyan' },
+    { icon: Mail, href: '#', label: 'Email', color: 'hover:text-primary-600 dark:text-primary-400' },
   ];
 
   const subjects = [
@@ -107,7 +107,7 @@ export const Contact: React.FC = () => {
           transition={{ duration: 0.6 }}
           className="text-center mb-16"
         >
-          <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-neon-purple to-neon-cyan bg-clip-text text-transparent">
+          <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary-500 to-accent-600 bg-clip-text text-transparent">
             Get in Touch
           </h1>
           <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
@@ -124,9 +124,9 @@ export const Contact: React.FC = () => {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="lg:col-span-2"
           >
-            <div className="bg-white/80 dark:bg-dark-800/80 backdrop-blur-lg rounded-2xl p-8 border border-white/20 dark:border-neon-purple/20 shadow-xl">
+            <div className="card p-8">
               <div className="flex items-center space-x-2 mb-6">
-                <MessageCircle className="h-6 w-6 text-neon-purple" />
+                <MessageCircle className="h-6 w-6 text-secondary-600 dark:text-secondary-400" />
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Send us a Message</h2>
               </div>
 
@@ -158,7 +158,7 @@ export const Contact: React.FC = () => {
                         required
                         value={formData.name}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-3 rounded-lg bg-white/50 dark:bg-dark-700/50 border border-gray-300 dark:border-neon-purple/30 focus:ring-2 focus:ring-neon-purple focus:border-transparent transition-all duration-200 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                        className="w-full px-4 py-3 rounded-lg bg-white/50 dark:bg-dark-700/50 border border-gray-300 dark:border-primary-300 dark:border-primary-700 focus:ring-2 focus:ring-neon-purple focus:border-transparent transition-all duration-200 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                         placeholder="Your full name"
                       />
                     </div>
@@ -174,7 +174,7 @@ export const Contact: React.FC = () => {
                         required
                         value={formData.email}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-3 rounded-lg bg-white/50 dark:bg-dark-700/50 border border-gray-300 dark:border-neon-purple/30 focus:ring-2 focus:ring-neon-purple focus:border-transparent transition-all duration-200 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                        className="w-full px-4 py-3 rounded-lg bg-white/50 dark:bg-dark-700/50 border border-gray-300 dark:border-primary-300 dark:border-primary-700 focus:ring-2 focus:ring-neon-purple focus:border-transparent transition-all duration-200 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                         placeholder="your@email.com"
                       />
                     </div>
@@ -190,7 +190,7 @@ export const Contact: React.FC = () => {
                       required
                       value={formData.subject}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-3 rounded-lg bg-white/50 dark:bg-dark-700/50 border border-gray-300 dark:border-neon-purple/30 focus:ring-2 focus:ring-neon-purple focus:border-transparent transition-all duration-200 text-gray-900 dark:text-white"
+                      className="w-full px-4 py-3 rounded-lg bg-white/50 dark:bg-dark-700/50 border border-gray-300 dark:border-primary-300 dark:border-primary-700 focus:ring-2 focus:ring-neon-purple focus:border-transparent transition-all duration-200 text-gray-900 dark:text-white"
                     >
                       <option value="">Select a subject</option>
                       {subjects.map((subject) => (
@@ -212,7 +212,7 @@ export const Contact: React.FC = () => {
                       rows={6}
                       value={formData.message}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-3 rounded-lg bg-white/50 dark:bg-dark-700/50 border border-gray-300 dark:border-neon-purple/30 focus:ring-2 focus:ring-neon-purple focus:border-transparent transition-all duration-200 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 resize-none"
+                      className="w-full px-4 py-3 rounded-lg bg-white/50 dark:bg-dark-700/50 border border-gray-300 dark:border-primary-300 dark:border-primary-700 focus:ring-2 focus:ring-neon-purple focus:border-transparent transition-all duration-200 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 resize-none"
                       placeholder="Tell us how we can help you..."
                     />
                   </div>
@@ -222,7 +222,7 @@ export const Contact: React.FC = () => {
                     whileTap={{ scale: 0.98 }}
                     type="submit"
                     disabled={isSubmitting}
-                    className="w-full bg-gradient-to-r from-neon-purple to-neon-cyan text-white px-6 py-4 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:shadow-neon-purple/25 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                    className="w-full bg-gradient-to-r from-primary-500 to-accent-600 text-white px-6 py-4 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:shadow-neon-purple/25 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                   >
                     {isSubmitting ? (
                       <>
@@ -253,7 +253,7 @@ export const Contact: React.FC = () => {
             className="space-y-8"
           >
             {/* Contact Information */}
-            <div className="bg-white/80 dark:bg-dark-800/80 backdrop-blur-lg rounded-2xl p-6 border border-white/20 dark:border-neon-purple/20 shadow-xl">
+            <div className="bg-white dark:bg-dark-800 rounded-2xl p-6 border border-gray-200 dark:border-dark-700 shadow-xl">
               <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
                 Contact Information
               </h3>
@@ -268,13 +268,13 @@ export const Contact: React.FC = () => {
                     className="flex items-start space-x-3"
                   >
                     <div className="p-2 rounded-lg bg-gradient-to-r from-neon-purple/20 to-neon-cyan/20">
-                      <info.icon className="h-5 w-5 text-neon-cyan" />
+                      <info.icon className="h-5 w-5 text-primary-600 dark:text-primary-400" />
                     </div>
                     <div>
                       <h4 className="font-medium text-gray-900 dark:text-white">
                         {info.title}
                       </h4>
-                      <p className="text-neon-purple font-medium">{info.content}</p>
+                      <p className="text-secondary-600 dark:text-secondary-400 font-medium">{info.content}</p>
                       <p className="text-sm text-gray-600 dark:text-gray-300">
                         {info.description}
                       </p>
@@ -285,7 +285,7 @@ export const Contact: React.FC = () => {
             </div>
 
             {/* Social Links */}
-            <div className="bg-white/80 dark:bg-dark-800/80 backdrop-blur-lg rounded-2xl p-6 border border-white/20 dark:border-neon-purple/20 shadow-xl">
+            <div className="bg-white dark:bg-dark-800 rounded-2xl p-6 border border-gray-200 dark:border-dark-700 shadow-xl">
               <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
                 Follow Us
               </h3>

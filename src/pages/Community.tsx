@@ -32,25 +32,25 @@ export const Community: React.FC = () => {
       icon: MessageCircle,
       title: 'Exclusive Discord',
       description: 'Join our private Discord community with 1000+ creators and developers',
-      gradient: 'from-neon-purple to-neon-pink'
+      gradient: 'from-primary-500 to-secondary-600'
     },
     {
       icon: Video,
       title: 'Live Workshops',
       description: 'Weekly live coding sessions and creative workshops with industry experts',
-      gradient: 'from-neon-cyan to-neon-green'
+      gradient: 'from-accent-500 to-success-600'
     },
     {
       icon: BookOpen,
       title: 'Premium Courses',
       description: 'Access to exclusive programming courses and creative content strategies',
-      gradient: 'from-neon-pink to-neon-yellow'
+      gradient: 'from-secondary-500 to-warning-600'
     },
     {
       icon: Award,
       title: 'Certification Programs',
       description: 'Earn verified certificates in programming and content creation',
-      gradient: 'from-neon-green to-neon-cyan'
+      gradient: 'from-success-500 to-accent-600'
     }
   ];
 
@@ -67,7 +67,7 @@ export const Community: React.FC = () => {
         'Early access to content',
         'Member-only resources'
       ],
-      gradient: 'from-neon-purple to-neon-cyan'
+      gradient: 'from-primary-500 to-accent-600'
     },
     {
       id: 'mastermind',
@@ -83,7 +83,7 @@ export const Community: React.FC = () => {
         'Business strategy guidance',
         'Revenue sharing opportunities'
       ],
-      gradient: 'from-neon-cyan to-neon-green'
+      gradient: 'from-accent-500 to-success-600'
     }
   ];
 
@@ -166,7 +166,7 @@ export const Community: React.FC = () => {
           transition={{ duration: 0.6 }}
           className="text-center mb-16"
         >
-          <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-neon-purple to-neon-cyan bg-clip-text text-transparent">
+          <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary-500 to-accent-600 bg-clip-text text-transparent">
             Join Our Community
           </h1>
           <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
@@ -183,7 +183,7 @@ export const Community: React.FC = () => {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: index * 0.1 }}
-              className="group bg-white/80 dark:bg-dark-800/80 backdrop-blur-lg rounded-2xl p-6 border border-white/20 dark:border-neon-purple/20 shadow-xl hover:shadow-2xl hover:shadow-neon-purple/10 transition-all duration-300 text-center"
+              className="group bg-white dark:bg-dark-800 rounded-2xl p-6 border border-gray-200 dark:border-dark-700 shadow-xl hover:shadow-2xl hover:shadow-neon-purple/10 transition-all duration-300 text-center"
             >
               <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-r ${feature.gradient} mb-4 group-hover:animate-pulse`}>
                 <feature.icon className="h-8 w-8 text-white" />
@@ -205,7 +205,7 @@ export const Community: React.FC = () => {
           transition={{ duration: 0.6, delay: 0.4 }}
           className="mb-16"
         >
-          <h2 className="text-3xl font-bold text-center mb-8 bg-gradient-to-r from-neon-purple to-neon-cyan bg-clip-text text-transparent">
+          <h2 className="text-3xl font-bold text-center mb-8 bg-gradient-to-r from-primary-500 to-accent-600 bg-clip-text text-transparent">
             Membership Tiers
           </h2>
           
@@ -216,15 +216,15 @@ export const Community: React.FC = () => {
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.6 + index * 0.1 }}
-                className={`relative bg-white/80 dark:bg-dark-800/80 backdrop-blur-lg rounded-2xl p-8 border transition-all duration-300 hover:shadow-2xl ${
+                className={`relative bg-white dark:bg-dark-800 rounded-2xl p-8 border transition-all duration-300 hover:shadow-2xl ${
                   tier.popular 
                     ? 'border-neon-purple/50 shadow-xl shadow-neon-purple/10 scale-105' 
-                    : 'border-white/20 dark:border-neon-purple/20 hover:border-neon-cyan/50'
+                    : 'border-gray-200 dark:border-dark-700 hover:border-neon-cyan/50'
                 }`}
               >
                 {tier.popular && (
                   <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                    <div className="bg-gradient-to-r from-neon-purple to-neon-cyan text-white px-4 py-1 rounded-full text-sm font-medium flex items-center space-x-1">
+                    <div className="bg-gradient-to-r from-primary-500 to-accent-600 text-white px-4 py-1 rounded-full text-sm font-medium flex items-center space-x-1">
                       <Star className="h-4 w-4" />
                       <span>Most Popular</span>
                     </div>
@@ -253,7 +253,7 @@ export const Community: React.FC = () => {
                 <ul className="space-y-4 mb-8">
                   {tier.features.map((feature, featureIndex) => (
                     <li key={featureIndex} className="flex items-center space-x-3">
-                      <Heart className="h-5 w-5 text-neon-pink flex-shrink-0" />
+                      <Heart className="h-5 w-5 text-accent-600 dark:text-accent-400 flex-shrink-0" />
                       <span className="text-gray-600 dark:text-gray-300">{feature}</span>
                     </li>
                   ))}
@@ -268,8 +268,8 @@ export const Community: React.FC = () => {
                     joinedTier === tier.id
                       ? 'bg-green-500 text-white'
                       : tier.popular
-                      ? 'bg-gradient-to-r from-neon-purple to-neon-cyan text-white shadow-lg hover:shadow-xl hover:shadow-neon-purple/25'
-                      : 'bg-white/20 dark:bg-dark-700/50 text-gray-900 dark:text-white border border-gray-300 dark:border-neon-purple/30 hover:bg-white/30 dark:hover:bg-dark-600/50'
+                      ? 'bg-gradient-to-r from-primary-500 to-accent-600 text-white shadow-lg hover:shadow-xl hover:shadow-neon-purple/25'
+                      : 'bg-white/20 dark:bg-dark-700/50 text-gray-900 dark:text-white border border-gray-300 dark:border-primary-300 dark:border-primary-700 hover:bg-white/30 dark:hover:bg-dark-600/50'
                   } disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
                   {isJoining && selectedTier === tier.id ? (
@@ -301,7 +301,7 @@ export const Community: React.FC = () => {
           transition={{ duration: 0.6, delay: 0.8 }}
           className="mb-16"
         >
-          <h2 className="text-3xl font-bold text-center mb-8 bg-gradient-to-r from-neon-purple to-neon-cyan bg-clip-text text-transparent">
+          <h2 className="text-3xl font-bold text-center mb-8 bg-gradient-to-r from-primary-500 to-accent-600 bg-clip-text text-transparent">
             Upcoming Events
           </h2>
           
@@ -312,13 +312,13 @@ export const Community: React.FC = () => {
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 1.0 + index * 0.1 }}
-                className="bg-white/80 dark:bg-dark-800/80 backdrop-blur-lg rounded-2xl p-6 border border-white/20 dark:border-neon-purple/20 shadow-xl hover:shadow-2xl hover:shadow-neon-purple/10 transition-all duration-300"
+                className="bg-white dark:bg-dark-800 rounded-2xl p-6 border border-gray-200 dark:border-dark-700 shadow-xl hover:shadow-2xl hover:shadow-neon-purple/10 transition-all duration-300"
               >
                 <div className="flex items-center justify-between mb-4">
-                  <span className="px-3 py-1 rounded-full text-xs font-medium bg-neon-purple/20 text-neon-purple">
+                  <span className="px-3 py-1 rounded-full text-xs font-medium bg-neon-purple/20 text-secondary-600 dark:text-secondary-400">
                     {event.type}
                   </span>
-                  <span className="text-lg font-bold text-neon-cyan">
+                  <span className="text-lg font-bold text-primary-600 dark:text-primary-400">
                     ${event.price}
                   </span>
                 </div>
@@ -350,7 +350,7 @@ export const Community: React.FC = () => {
                   className={`w-full py-2 rounded-lg font-medium transition-all duration-300 flex items-center justify-center space-x-2 ${
                     registeredEvents.includes(event.id)
                       ? 'bg-green-500 text-white'
-                      : 'bg-gradient-to-r from-neon-purple to-neon-cyan text-white hover:shadow-lg hover:shadow-neon-purple/25'
+                      : 'bg-gradient-to-r from-primary-500 to-accent-600 text-white hover:shadow-lg hover:shadow-neon-purple/25'
                   } disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
                   {isRegistering && selectedEvent === event.id ? (
@@ -377,9 +377,9 @@ export const Community: React.FC = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 1.2 }}
-          className="bg-gradient-to-r from-neon-purple/20 to-neon-cyan/20 rounded-2xl p-8 text-center border border-neon-purple/30"
+          className="bg-gradient-to-r from-neon-purple/20 to-neon-cyan/20 rounded-2xl p-8 text-center border border-primary-300 dark:border-primary-700"
         >
-          <Users className="h-16 w-16 text-neon-cyan mx-auto mb-6" />
+          <Users className="h-16 w-16 text-primary-600 dark:text-primary-400 mx-auto mb-6" />
           <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
             Ready to Level Up Your Skills?
           </h3>
@@ -392,7 +392,7 @@ export const Community: React.FC = () => {
             {!isAuthenticated ? (
               <Link
                 to="/auth"
-                className="inline-flex items-center space-x-2 bg-gradient-to-r from-neon-purple to-neon-cyan text-white px-8 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:shadow-neon-purple/25"
+                className="inline-flex items-center space-x-2 bg-gradient-to-r from-primary-500 to-accent-600 text-white px-8 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:shadow-neon-purple/25"
               >
                 <Users className="h-5 w-5" />
                 <span>Sign Up to Join</span>
@@ -402,7 +402,7 @@ export const Community: React.FC = () => {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => handleJoinCommunity('community')}
-                className="inline-flex items-center space-x-2 bg-gradient-to-r from-neon-purple to-neon-cyan text-white px-8 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:shadow-neon-purple/25"
+                className="inline-flex items-center space-x-2 bg-gradient-to-r from-primary-500 to-accent-600 text-white px-8 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:shadow-neon-purple/25"
               >
                 <Users className="h-5 w-5" />
                 <span>Join Community</span>
@@ -411,7 +411,7 @@ export const Community: React.FC = () => {
             
             <Link
               to="/contact"
-              className="inline-flex items-center space-x-2 bg-white/20 dark:bg-dark-700/50 text-gray-900 dark:text-white px-8 py-3 rounded-lg font-semibold border border-gray-300 dark:border-neon-purple/30 hover:bg-white/30 dark:hover:bg-dark-600/50 transition-all duration-300"
+              className="inline-flex items-center space-x-2 bg-white/20 dark:bg-dark-700/50 text-gray-900 dark:text-white px-8 py-3 rounded-lg font-semibold border border-gray-300 dark:border-primary-300 dark:border-primary-700 hover:bg-white/30 dark:hover:bg-dark-600/50 transition-all duration-300"
             >
               <MessageCircle className="h-5 w-5" />
               <span>Learn More</span>

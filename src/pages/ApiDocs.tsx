@@ -156,7 +156,7 @@ curl -X POST https://api.linesgenius.com/v1/generate \\
                 }
               ].map((feature, index) => (
                 <div key={index} className="bg-white/50 dark:bg-dark-700/50 rounded-lg p-4 border border-gray-200 dark:border-neon-purple/20">
-                  <feature.icon className="h-8 w-8 text-neon-purple mb-3" />
+                  <feature.icon className="h-8 w-8 text-secondary-600 dark:text-secondary-400 mb-3" />
                   <h4 className="font-semibold text-gray-900 dark:text-white mb-2">
                     {feature.title}
                   </h4>
@@ -171,7 +171,7 @@ curl -X POST https://api.linesgenius.com/v1/generate \\
               <h4 className="font-semibold text-gray-900 dark:text-white mb-2">
                 Base URL
               </h4>
-              <code className="text-neon-purple font-mono">
+              <code className="text-secondary-600 dark:text-secondary-400 font-mono">
                 https://api.linesgenius.com/v1
               </code>
             </div>
@@ -256,7 +256,7 @@ curl -X POST https://api.linesgenius.com/v1/generate \\
                     }`}>
                       {endpoint.method}
                     </span>
-                    <code className="text-neon-purple font-mono">
+                    <code className="text-secondary-600 dark:text-secondary-400 font-mono">
                       {endpoint.path}
                     </code>
                   </div>
@@ -283,7 +283,7 @@ curl -X POST https://api.linesgenius.com/v1/generate \\
                           <tbody>
                             {endpoint.params.map((param, paramIndex) => (
                               <tr key={paramIndex} className="border-b border-gray-100 dark:border-gray-800">
-                                <td className="py-2 font-mono text-neon-purple">{param.name}</td>
+                                <td className="py-2 font-mono text-secondary-600 dark:text-secondary-400">{param.name}</td>
                                 <td className="py-2 text-gray-600 dark:text-gray-300">{param.type}</td>
                                 <td className="py-2">
                                   <span className={`px-2 py-1 rounded text-xs ${
@@ -470,7 +470,7 @@ console.log(lines);`}
           transition={{ duration: 0.6 }}
           className="text-center mb-12"
         >
-          <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-neon-purple to-neon-cyan bg-clip-text text-transparent">
+          <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary-500 to-accent-600 bg-clip-text text-transparent">
             API Documentation
           </h1>
           <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
@@ -487,7 +487,7 @@ console.log(lines);`}
             transition={{ duration: 0.6, delay: 0.2 }}
             className="lg:col-span-1"
           >
-            <div className="bg-white/80 dark:bg-dark-800/80 backdrop-blur-lg rounded-2xl p-6 border border-white/20 dark:border-neon-purple/20 shadow-xl sticky top-8">
+            <div className="bg-white dark:bg-dark-800 rounded-2xl p-6 border border-gray-200 dark:border-dark-700 shadow-xl sticky top-8">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                 Documentation
               </h3>
@@ -498,8 +498,8 @@ console.log(lines);`}
                     onClick={() => setActiveTab(tab.id)}
                     className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-all duration-200 ${
                       activeTab === tab.id
-                        ? 'bg-gradient-to-r from-neon-purple/20 to-neon-cyan/20 text-neon-cyan border border-neon-cyan/30'
-                        : 'text-gray-600 dark:text-gray-300 hover:text-neon-purple dark:hover:text-neon-cyan hover:bg-white/50 dark:hover:bg-dark-700/50'
+                        ? 'bg-gradient-to-r from-neon-purple/20 to-neon-cyan/20 text-primary-600 dark:text-primary-400 border border-neon-cyan/30'
+                        : 'text-gray-600 dark:text-gray-300 hover:text-secondary-600 dark:text-secondary-400 dark:hover:text-primary-600 dark:text-primary-400 hover:bg-white/50 dark:hover:bg-dark-700/50'
                     }`}
                   >
                     <tab.icon className="h-4 w-4" />
@@ -515,13 +515,13 @@ console.log(lines);`}
                 <div className="space-y-2">
                   <a
                     href="/contact"
-                    className="block text-sm text-gray-600 dark:text-gray-300 hover:text-neon-purple dark:hover:text-neon-cyan transition-colors"
+                    className="block text-sm text-gray-600 dark:text-gray-300 hover:text-secondary-600 dark:text-secondary-400 dark:hover:text-primary-600 dark:text-primary-400 transition-colors"
                   >
                     Contact Support
                   </a>
                   <a
                     href="/community"
-                    className="block text-sm text-gray-600 dark:text-gray-300 hover:text-neon-purple dark:hover:text-neon-cyan transition-colors"
+                    className="block text-sm text-gray-600 dark:text-gray-300 hover:text-secondary-600 dark:text-secondary-400 dark:hover:text-primary-600 dark:text-primary-400 transition-colors"
                   >
                     Join Community
                   </a>
@@ -537,7 +537,7 @@ console.log(lines);`}
             transition={{ duration: 0.6, delay: 0.4 }}
             className="lg:col-span-3"
           >
-            <div className="bg-white/80 dark:bg-dark-800/80 backdrop-blur-lg rounded-2xl p-8 border border-white/20 dark:border-neon-purple/20 shadow-xl">
+            <div className="card p-8">
               {renderTabContent()}
             </div>
           </motion.div>
@@ -548,9 +548,9 @@ console.log(lines);`}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.8 }}
-          className="mt-16 bg-gradient-to-r from-neon-purple/20 to-neon-cyan/20 rounded-2xl p-8 text-center border border-neon-purple/30"
+          className="mt-16 bg-gradient-to-r from-neon-purple/20 to-neon-cyan/20 rounded-2xl p-8 text-center border border-primary-300 dark:border-primary-700"
         >
-          <Code className="h-16 w-16 text-neon-cyan mx-auto mb-6" />
+          <Code className="h-16 w-16 text-primary-600 dark:text-primary-400 mx-auto mb-6" />
           <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
             Ready to Get Started?
           </h3>
@@ -563,7 +563,7 @@ console.log(lines);`}
             href="/pricing"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="inline-flex items-center space-x-2 bg-gradient-to-r from-neon-purple to-neon-cyan text-white px-8 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:shadow-neon-purple/25"
+            className="inline-flex items-center space-x-2 bg-gradient-to-r from-primary-500 to-accent-600 text-white px-8 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:shadow-neon-purple/25"
           >
             <span>Get API Access</span>
             <ArrowRight className="h-5 w-5" />

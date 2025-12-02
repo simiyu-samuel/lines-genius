@@ -187,7 +187,7 @@ export const Courses: React.FC = () => {
           transition={{ duration: 0.6 }}
           className="text-center mb-12"
         >
-          <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-neon-purple to-neon-cyan bg-clip-text text-transparent">
+          <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary-500 to-accent-600 bg-clip-text text-transparent">
             Premium Courses
           </h1>
           <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
@@ -201,7 +201,7 @@ export const Courses: React.FC = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="bg-white/80 dark:bg-dark-800/80 backdrop-blur-lg rounded-2xl p-6 border border-white/20 dark:border-neon-purple/20 shadow-xl mb-8"
+          className="bg-white dark:bg-dark-800 rounded-2xl p-6 border border-gray-200 dark:border-dark-700 shadow-xl mb-8"
         >
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div className="flex flex-col sm:flex-row gap-4 flex-1">
@@ -212,14 +212,14 @@ export const Courses: React.FC = () => {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Search courses..."
-                  className="w-full pl-10 pr-4 py-3 rounded-lg bg-white/50 dark:bg-dark-700/50 border border-gray-300 dark:border-neon-purple/30 focus:ring-2 focus:ring-neon-purple focus:border-transparent transition-all duration-200 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                  className="w-full pl-10 pr-4 py-3 rounded-lg bg-white/50 dark:bg-dark-700/50 border border-gray-300 dark:border-primary-300 dark:border-primary-700 focus:ring-2 focus:ring-neon-purple focus:border-transparent transition-all duration-200 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                 />
               </div>
               
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="px-4 py-3 rounded-lg bg-white/50 dark:bg-dark-700/50 border border-gray-300 dark:border-neon-purple/30 focus:ring-2 focus:ring-neon-purple focus:border-transparent transition-all duration-200 text-gray-900 dark:text-white"
+                className="px-4 py-3 rounded-lg bg-white/50 dark:bg-dark-700/50 border border-gray-300 dark:border-primary-300 dark:border-primary-700 focus:ring-2 focus:ring-neon-purple focus:border-transparent transition-all duration-200 text-gray-900 dark:text-white"
               >
                 {categories.map((category) => (
                   <option key={category} value={category}>
@@ -231,7 +231,7 @@ export const Courses: React.FC = () => {
               <select
                 value={selectedLevel}
                 onChange={(e) => setSelectedLevel(e.target.value)}
-                className="px-4 py-3 rounded-lg bg-white/50 dark:bg-dark-700/50 border border-gray-300 dark:border-neon-purple/30 focus:ring-2 focus:ring-neon-purple focus:border-transparent transition-all duration-200 text-gray-900 dark:text-white"
+                className="px-4 py-3 rounded-lg bg-white/50 dark:bg-dark-700/50 border border-gray-300 dark:border-primary-300 dark:border-primary-700 focus:ring-2 focus:ring-neon-purple focus:border-transparent transition-all duration-200 text-gray-900 dark:text-white"
               >
                 {levels.map((level) => (
                   <option key={level} value={level}>
@@ -260,7 +260,7 @@ export const Courses: React.FC = () => {
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
-                className="group bg-white/80 dark:bg-dark-800/80 backdrop-blur-lg rounded-2xl overflow-hidden border border-white/20 dark:border-neon-purple/20 shadow-xl hover:shadow-2xl hover:shadow-neon-purple/10 transition-all duration-300 hover:border-neon-cyan/50"
+                className="group bg-white dark:bg-dark-800 rounded-2xl overflow-hidden border border-gray-200 dark:border-dark-700 shadow-xl hover:shadow-2xl hover:shadow-neon-purple/10 transition-all duration-300 hover:border-neon-cyan/50"
               >
                 <div className="relative">
                   <img
@@ -275,7 +275,7 @@ export const Courses: React.FC = () => {
                   </div>
                   <div className="absolute top-4 right-4">
                     <div className="bg-white/90 dark:bg-dark-800/90 backdrop-blur-sm rounded-full p-2">
-                      <CategoryIcon className="h-5 w-5 text-neon-purple" />
+                      <CategoryIcon className="h-5 w-5 text-secondary-600 dark:text-secondary-400" />
                     </div>
                   </div>
                   <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
@@ -285,7 +285,7 @@ export const Courses: React.FC = () => {
 
                 <div className="p-6">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-neon-purple font-medium">{course.category}</span>
+                    <span className="text-sm text-secondary-600 dark:text-secondary-400 font-medium">{course.category}</span>
                     <div className="flex items-center space-x-1">
                       <Star className="h-4 w-4 text-yellow-500 fill-current" />
                       <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
@@ -294,7 +294,7 @@ export const Courses: React.FC = () => {
                     </div>
                   </div>
 
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2 group-hover:text-neon-cyan transition-colors">
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2 group-hover:text-primary-600 dark:text-primary-400 transition-colors">
                     {course.title}
                   </h3>
 
@@ -318,7 +318,7 @@ export const Courses: React.FC = () => {
                   <div className="space-y-2 mb-6">
                     {course.features.slice(0, 2).map((feature, featureIndex) => (
                       <div key={featureIndex} className="flex items-center space-x-2 text-xs text-gray-600 dark:text-gray-300">
-                        <Award className="h-3 w-3 text-neon-cyan" />
+                        <Award className="h-3 w-3 text-primary-600 dark:text-primary-400" />
                         <span>{feature}</span>
                       </div>
                     ))}
@@ -339,7 +339,7 @@ export const Courses: React.FC = () => {
                       className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
                         isEnrolled
                           ? 'bg-green-500 text-white'
-                          : 'bg-gradient-to-r from-neon-purple to-neon-cyan text-white hover:shadow-lg hover:shadow-neon-purple/25'
+                          : 'bg-gradient-to-r from-primary-500 to-accent-600 text-white hover:shadow-lg hover:shadow-neon-purple/25'
                       } disabled:opacity-50 disabled:cursor-not-allowed`}
                     >
                       {isEnrolling ? (
@@ -371,9 +371,9 @@ export const Courses: React.FC = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.8 }}
-          className="mt-16 bg-gradient-to-r from-neon-purple/20 to-neon-cyan/20 rounded-2xl p-8 text-center border border-neon-purple/30"
+          className="mt-16 bg-gradient-to-r from-neon-purple/20 to-neon-cyan/20 rounded-2xl p-8 text-center border border-primary-300 dark:border-primary-700"
         >
-          <BookOpen className="h-16 w-16 text-neon-cyan mx-auto mb-6" />
+          <BookOpen className="h-16 w-16 text-primary-600 dark:text-primary-400 mx-auto mb-6" />
           <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
             Can't Find What You're Looking For?
           </h3>
@@ -386,7 +386,7 @@ export const Courses: React.FC = () => {
             {!isAuthenticated && (
               <Link
                 to="/auth"
-                className="inline-flex items-center space-x-2 bg-gradient-to-r from-neon-purple to-neon-cyan text-white px-8 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:shadow-neon-purple/25"
+                className="inline-flex items-center space-x-2 bg-gradient-to-r from-primary-500 to-accent-600 text-white px-8 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:shadow-neon-purple/25"
               >
                 <BookOpen className="h-5 w-5" />
                 <span>Sign Up to Enroll</span>
@@ -395,7 +395,7 @@ export const Courses: React.FC = () => {
             
             <Link
               to="/contact"
-              className="inline-flex items-center space-x-2 bg-white/20 dark:bg-dark-700/50 text-gray-900 dark:text-white px-8 py-3 rounded-lg font-semibold border border-gray-300 dark:border-neon-purple/30 hover:bg-white/30 dark:hover:bg-dark-600/50 transition-all duration-300"
+              className="inline-flex items-center space-x-2 bg-white/20 dark:bg-dark-700/50 text-gray-900 dark:text-white px-8 py-3 rounded-lg font-semibold border border-gray-300 dark:border-primary-300 dark:border-primary-700 hover:bg-white/30 dark:hover:bg-dark-600/50 transition-all duration-300"
             >
               <span>Request a Course</span>
               <ArrowRight className="h-5 w-5" />
